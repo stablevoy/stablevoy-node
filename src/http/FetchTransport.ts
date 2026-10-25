@@ -15,6 +15,8 @@ export interface FetchTransportOptions {
   readonly fetch: typeof fetch;
   readonly sleep: Sleep;
   readonly errors: ErrorFactory;
+  /** Each attempt is aborted after this many seconds, so a server that never answers cannot hang the caller. */
+  readonly timeoutSeconds: number;
 }
 
 /**
@@ -27,6 +29,7 @@ export class FetchTransport implements Transport {
 
   constructor(options: FetchTransportOptions) {
     if (options.apiKey.trim() === '') throw new ConfigurationError('The API key is empty. Create one in the Stablevoy dashboard.');
+    if (!(options.timeoutSeconds > 0 && options.timeoutSeconds <= 600)) throw new ConfigurationError(`timeoutSeconds must be more than 0 and at most 600; got ${String(options.timeoutSeconds)}`);
     this.options = options;
     this.baseUrl = FetchTransport.checkedBaseUrl(options.baseUrl);
   }
@@ -51,15 +54,17 @@ export class FetchTransport implements Transport {
     };
     for (let attempt = 1; ; attempt++) {
       let response: Response;
+      let text: string;
       try {
-        response = await this.options.fetch(url, request);
+        // The signal also covers reading the body, so a server that sends headers and then stalls is cut off too.
+        response = await this.options.fetch(url, { ...request, signal: AbortSignal.timeout(this.options.timeoutSeconds * 1000) });
+        text = await response.text();
       } catch (error) {
         const wait = retryable ? this.options.retries.waitBefore(attempt, null) : null;
         if (wait === null) throw new TransportError(`Cannot reach the Stablevoy API: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
         await this.options.sleep(wait);
         continue;
       }
-      const text = await response.text();
       if (response.ok) return FetchTransport.decode(text);
       const apiError = this.options.errors.fromProblem(response.status, text, FetchTransport.retryAfter(response));
       const wait = retryable && FetchTransport.isRetryable(apiError) ? this.options.retries.waitBefore(attempt, apiError.retryAfterSeconds) : null;

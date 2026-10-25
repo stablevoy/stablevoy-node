@@ -4,6 +4,7 @@ export interface SentRequest {
   readonly headers: Record<string, string>;
   readonly body: string | null;
   readonly redirect: string | undefined;
+  readonly signal: AbortSignal | null | undefined;
 }
 
 type Answer = Response | Error;
@@ -19,7 +20,7 @@ export class FakeFetch {
 
   readonly fetch = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
     const headers = (init?.headers ?? {}) as Record<string, string>;
-    this.requests.push({ url: input instanceof Request ? input.url : input.toString(), method: init?.method ?? 'GET', headers, body: typeof init?.body === 'string' ? init.body : null, redirect: init?.redirect });
+    this.requests.push({ url: input instanceof Request ? input.url : input.toString(), method: init?.method ?? 'GET', headers, body: typeof init?.body === 'string' ? init.body : null, redirect: init?.redirect, signal: init?.signal });
     const answer = this.answers.shift();
     if (answer === undefined) return Promise.reject(new Error('FakeFetch got more requests than answers'));
     // Anything but a Response is what fetch rejects with, including values that are no Error.

@@ -20,6 +20,8 @@ export interface StablevoyOptions {
   readonly sleep?: Sleep;
   /** Added to the User-Agent, e.g. "my-shop/2.1". */
   readonly userAgentSuffix?: string;
+  /** Seconds before an attempt is given up, at most 600; 30 by default. */
+  readonly timeoutSeconds?: number;
 }
 
 /** The Stablevoy API: `const stablevoy = Stablevoy.create({ apiKey: process.env.STABLEVOY_API_KEY })`. */
@@ -44,6 +46,7 @@ export class Stablevoy {
         fetch: fetchFn,
         sleep: options.sleep ?? realSleep,
         errors: new ErrorFactory(),
+        timeoutSeconds: options.timeoutSeconds ?? 30,
       }),
     );
   }

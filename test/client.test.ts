@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ConfigurationError } from '../src/errors/ConfigurationError.js';
+import { TransportError } from '../src/errors/TransportError.js';
 import { Stablevoy } from '../src/Stablevoy.js';
 import { VERSION } from '../src/version.js';
 import { realSleep } from '../src/http/Sleep.js';
@@ -43,6 +44,34 @@ describe('Stablevoy client', () => {
     expect(http.last().redirect).toBe('error');
   });
 
+  it('gives every attempt a timeout, 30 seconds by default', async () => {
+    const http = new FakeFetch(json(200, limits));
+    await Stablevoy.create({ apiKey: 'sk_test_key', fetch: http.fetch }).platform.limits();
+    expect(http.last().signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('aborts an attempt the server never answers, retries where safe, then reports it', async () => {
+    const hanging = (_input: string | URL | Request, init?: RequestInit): Promise<Response> =>
+      new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => { reject(init.signal?.reason as Error); }));
+    const slept: number[] = [];
+    const client = Stablevoy.create({ apiKey: 'sk_test_key', fetch: hanging, timeoutSeconds: 0.02, sleep: (s) => { slept.push(s); return Promise.resolve(); } });
+    await expect(client.platform.limits()).rejects.toThrow(/Cannot reach the Stablevoy API: .*(timed out|aborted|timeout)/i);
+    expect(slept).toEqual([1, 2]);
+  });
+
+  it('aborts a body that stalls after the headers, retries where safe, then reports it', async () => {
+    const stalling = (_input: string | URL | Request, init?: RequestInit): Promise<Response> =>
+      Promise.resolve(new Response(new ReadableStream({ start: (controller) => { init?.signal?.addEventListener('abort', () => { controller.error(init.signal?.reason); }); } }), { status: 200 }));
+    const slept: number[] = [];
+    const client = Stablevoy.create({ apiKey: 'sk_test_key', fetch: stalling, timeoutSeconds: 0.02, sleep: (s) => { slept.push(s); return Promise.resolve(); } });
+    await expect(client.platform.limits()).rejects.toThrow(TransportError);
+    expect(slept).toEqual([1, 2]);
+  });
+
+  it.each([0, -1, Number.NaN, 601, Number.POSITIVE_INFINITY])('refuses the timeout %s', (timeoutSeconds) => {
+    expect(() => Stablevoy.create({ apiKey: 'sk_test_key', fetch: new FakeFetch().fetch, timeoutSeconds })).toThrow(ConfigurationError);
+  });
+
   it('refuses an empty key', () => {
     expect(() => Stablevoy.create({ apiKey: ' ', fetch: new FakeFetch().fetch })).toThrow('The API key is empty');
   });
@@ -67,7 +96,7 @@ describe('Stablevoy client', () => {
     } finally {
       if (original !== undefined) Object.defineProperty(globalThis, 'navigator', original);
     }
-    expect(http.last().headers['User-Agent']).toBe('stablevoy-node/1.0.0 unknown-runtime');
+    expect(http.last().headers['User-Agent']).toBe('stablevoy-node/1.0.1 unknown-runtime');
   });
 
   it('waits for real between retries by default', async () => {
