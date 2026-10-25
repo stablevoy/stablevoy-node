@@ -1,0 +1,61 @@
+{
+  "name": "stablevoy",
+  "version": "1.0.0",
+  "description": "Node.js and TypeScript client for the Stablevoy API: non-custodial USDT and USDC payments, invoices and signed webhooks.",
+  "keywords": [
+    "stablevoy",
+    "usdt",
+    "usdc",
+    "trc20",
+    "stablecoin",
+    "crypto payments",
+    "payment gateway",
+    "webhooks",
+    "tether",
+    "tron"
+  ],
+  "homepage": "https://stablevoy.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stablevoy/stablevoy-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stablevoy/stablevoy-node/issues"
+  },
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --coverage",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && node scripts/smoke.js",
+    "prepublishOnly": "npm run check"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.5",
+    "@vitest/coverage-v8": "5.0.5",
+    "eslint": "10.13.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  }
+}

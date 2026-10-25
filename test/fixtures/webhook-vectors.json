@@ -1,0 +1,17 @@
+{
+  "secret": "whsec_test_a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4",
+  "cases": [
+    {
+      "name": "invoice.paid",
+      "timestamp": 1792900000,
+      "body": "{\"id\":\"0e7c3c1e-6c0a-4d3e-9a51-2a1c7c9e4b10\",\"type\":\"invoice.paid\",\"createdAt\":\"2026-10-25T10:00:00.000Z\",\"data\":{\"invoice\":{\"id\":\"0b7e2f4c-8d1a-4c3b-9e5f-1a2b3c4d5e6f\",\"storeId\":\"6f1c2b8e-3a4d-4e5f-9a1b-2c3d4e5f6a7b\",\"status\":\"awaiting_payment\",\"amountUsdCents\":1999,\"feeBps\":50,\"invoiceSalt\":\"0x8f3a1c2b4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8\",\"payoutAddress\":\"0x5cC5bc5CC5bC5CC5bC5cc5bC5cC5bc5cc5Bc5cc5\",\"externalReference\":\"order-1042\",\"returnUrl\":\"https://shop.example/checkout/order-received/1042/\",\"expiresAt\":\"2026-10-16T13:00:00.000Z\",\"paidAt\":null,\"holdReason\":null,\"createdAt\":\"2026-10-16T12:00:00.000Z\",\"depositAddresses\":[{\"network\":\"base\",\"address\":\"0x1a2b3C4d5e6F7A8B9c0D1e2f3A4B5c6d7e8F9A0B\",\"payoutAddress\":\"0x5cC5bc5CC5bC5CC5bC5cc5bC5cC5bc5cc5Bc5cc5\",\"amountDueUsdCents\":1999},{\"network\":\"arbitrum\",\"address\":\"0x9F8e7d6c5B4a39281706F5e4d3C2B1A0f9E8d7c6\",\"payoutAddress\":\"0x5cC5bc5CC5bC5CC5bC5cc5bC5cC5bc5cc5Bc5cc5\",\"amountDueUsdCents\":1999}],\"payments\":[]}}}",
+      "header": "t=1792900000,v1=90b4cb53e4b76779cb5b8c16952fa2b7480bf3737f0e6980c159a54cc6ee85d5"
+    },
+    {
+      "name": "webhook.test with UTF-8",
+      "timestamp": 1792900100,
+      "body": "{\"id\":\"5b0d1f0a-3c2e-4b7a-8f61-9d2e4c1a7b33\",\"type\":\"webhook.test\",\"createdAt\":\"2026-10-25T10:01:40.000Z\",\"data\":{\"message\":\"Test event from Stablevoy, café\",\"storeId\":\"b7f0c8e2-1d3a-4e5f-9a6b-7c8d9e0f1a2b\"}}",
+      "header": "t=1792900100,v1=4782e3d926276b8c155f8203052949b55b5db9de7146af00e883e38b541e3435"
+    }
+  ]
+}
