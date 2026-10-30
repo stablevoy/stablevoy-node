@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- `invoices.list()` and `all()` take more filters: `source` (payment link, WooCommerce, Easy Digital Downloads, WHMCS, an API key made by hand, or not recorded; see `InvoiceSourceFilter`), `createdFrom` and `createdTo` (UTC days as YYYY-MM-DD, both ends included) and `search` (an invoice id or the start of the external reference).
+- Invoices carry `source`: how the invoice was made and, for a key, which one, on `list()`, `all()`, `get()` and `create()`.
+
 ## 1.0.1
 
 - Every attempt now times out, after 30 seconds by default (`timeoutSeconds` option, more than 0 and at most 600). Before, a server that never answered could keep a request waiting forever. The timeout also covers reading the body, so a server that sends headers and then stalls is cut off too. A timed-out or broken attempt is retried where a repeat is safe, and otherwise reported as a `TransportError`.

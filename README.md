@@ -42,6 +42,16 @@ for await (const invoice of stablevoy.invoices.all({ status: 'paid' })) {
 }
 ```
 
+Narrow the list by source, created days (UTC, both ends included) or a search by invoice id or the start of your order reference. Each invoice says where it came from:
+
+```ts
+import { InvoiceSourceFilter } from 'stablevoy';
+
+for await (const invoice of stablevoy.invoices.all({ source: InvoiceSourceFilter.PaymentLink, createdFrom: '2026-11-01', createdTo: '2026-11-30' })) {
+  console.log(invoice.id, invoice.source?.kind);
+}
+```
+
 ## Verify webhooks
 
 Stablevoy posts an event to your webhook URL when an invoice is paid, overpaid, underpaid, expired, paid late or put on hold. Check the signature before you trust it, using the signing secret shown when you set the webhook in the dashboard. Pass the raw body, exactly as received: a body parsed to JSON and serialised again no longer matches the signature.

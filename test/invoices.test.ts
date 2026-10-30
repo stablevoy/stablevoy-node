@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { InvoiceStatus, isPaidStatus } from '../src/model/InvoiceStatus.js';
+import { InvoiceSourceFilter } from '../src/model/InvoiceSource.js';
 import { json } from './support/FakeFetch.js';
 import { example } from './support/openApi.js';
 import { testClient } from './support/client.js';
@@ -14,7 +15,7 @@ describe('invoices', () => {
     const sent = http.last();
     expect(sent).toMatchObject({ method: 'POST', url: 'https://api.stablevoy.com/v1/invoices' });
     expect(sent.headers).toMatchObject({ Authorization: 'Bearer sk_test_key', 'Idempotency-Key': 'order-1042', 'Content-Type': 'application/json', Accept: 'application/json' });
-    expect(sent.headers['User-Agent']).toMatch(/^stablevoy-node\/1\.0\.1 /);
+    expect(sent.headers['User-Agent']).toMatch(/^stablevoy-node\/1\.1\.0 /);
     expect(JSON.parse(sent.body ?? '')).toEqual({ amountUsdCents: 1999, externalReference: 'order-1042', returnUrl: 'https://shop.example/thanks' });
     expect(result).toMatchObject({ checkoutUrl: created['checkoutUrl'], replayed: created['replayed'] });
     expect(result.invoice.id).toBe(created['id']);
@@ -97,5 +98,43 @@ describe('invoices', () => {
     const { client, http } = testClient([json(200, { items: [], nextCursor: null })]);
     for await (const item of client.invoices.all()) expect(item).toBeUndefined();
     expect(http.last().url).toBe('https://api.stablevoy.com/v1/invoices?limit=100');
+  });
+
+  it('sends the filters and reads the source of each listed invoice', async () => {
+    const invoice = example('GET', '/v1/invoices/{invoiceId}', 200) ;
+    const items = [
+      { ...invoice, source: { kind: 'plugin', platform: 'woocommerce', apiKeyId: 'k1' } },
+      { ...invoice, source: { kind: 'api_key', apiKeyId: 'k2', apiKeyName: 'own code' } },
+      { ...invoice, source: { kind: 'payment_link' } },
+      { ...invoice, source: null },
+    ];
+    const { client, http } = testClient([json(200, { items, nextCursor: null })]);
+    const page = await client.invoices.list({ limit: 10, status: InvoiceStatus.PAID, source: InvoiceSourceFilter.WooCommerce, createdFrom: '2026-10-01', createdTo: '2026-10-31', search: 'order 1/2' });
+    expect(http.last().url).toBe('https://api.stablevoy.com/v1/invoices?limit=10&status=paid&source=woocommerce&createdFrom=2026-10-01&createdTo=2026-10-31&q=order+1%2F2');
+    expect(page.items.map((i) => i.source)).toEqual([
+      { kind: 'plugin', platform: 'woocommerce', apiKeyId: 'k1', apiKeyName: null },
+      { kind: 'api_key', platform: null, apiKeyId: 'k2', apiKeyName: 'own code' },
+      { kind: 'payment_link', platform: null, apiKeyId: null, apiKeyName: null },
+      { kind: 'not_recorded', platform: null, apiKeyId: null, apiKeyName: null },
+    ]);
+  });
+
+  it('reads the source of a single invoice, and none from an older API', async () => {
+    const older = Object.fromEntries(Object.entries(example('GET', '/v1/invoices/{invoiceId}', 200)).filter(([key]) => key !== 'source'));
+    const { client } = testClient([json(200, example('GET', '/v1/invoices/{invoiceId}', 200)), json(200, older)]);
+    expect((await client.invoices.get(ID)).source?.kind).toBe('plugin');
+    expect(await client.invoices.get(ID)).not.toHaveProperty('source');
+  });
+
+  it.each([{ createdFrom: '1.10.2026' }, { createdTo: '2026-10-1' }, { search: '' }, { search: 'x'.repeat(201) }])('refuses the filter %o before sending anything', async (filter) => {
+    const { client, http } = testClient([]);
+    await expect(client.invoices.list(filter)).rejects.toThrow(RangeError);
+    expect(http.requests).toEqual([]);
+  });
+
+  it('walks every page of a filter', async () => {
+    const { client, http } = testClient([json(200, { items: [], nextCursor: null })]);
+    for await (const item of client.invoices.all({ source: InvoiceSourceFilter.PaymentLink, pageSize: 50 })) expect(item).toBeUndefined();
+    expect(http.last().url).toBe('https://api.stablevoy.com/v1/invoices?limit=50&source=payment_link');
   });
 });

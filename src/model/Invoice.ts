@@ -1,4 +1,5 @@
 import type { Fields } from './Fields.js';
+import { parseInvoiceSource, type InvoiceSource } from './InvoiceSource.js';
 
 /** Where the buyer pays on one network: a one-time deposit address, or on Tron the merchant's own wallet. */
 export interface DepositAddress {
@@ -39,6 +40,8 @@ export interface Invoice {
   readonly createdAt: Date;
   readonly depositAddresses: readonly DepositAddress[];
   readonly payments: readonly Payment[];
+  /** Where the invoice came from; absent only from an API older than 31 October 2026, which did not send it. */
+  readonly source?: InvoiceSource;
 }
 
 export function parseInvoice(f: Fields): Invoice {
@@ -72,6 +75,7 @@ export function parseInvoice(f: Fields): Invoice {
       screeningStatus: p.string('screeningStatus'),
       detectedAt: p.date('detectedAt'),
     })),
+    ...(Object.hasOwn(f.raw(), 'source') ? { source: parseInvoiceSource(f.raw()['source'] === null ? null : f.object('source')) } : {}),
   };
 }
 
