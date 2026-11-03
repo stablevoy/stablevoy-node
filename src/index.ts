@@ -1,4 +1,7 @@
 export { Stablevoy, type StablevoyOptions } from './Stablevoy.js';
+export { StablevoyConnect, type ExchangeInput } from './StablevoyConnect.js';
+export type { ConnectionOptions } from './ConnectionOptions.js';
+export type { ConnectedStore } from './model/ConnectedStore.js';
 export { VERSION } from './version.js';
 export { RetryPolicy } from './http/RetryPolicy.js';
 export type { Sleep } from './http/Sleep.js';

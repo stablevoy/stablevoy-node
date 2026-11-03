@@ -68,6 +68,23 @@ if (store.networksWithoutPayout.length > 0) {
 }
 ```
 
+## Connect a shop in one click
+
+A shop integration can get its API key and webhook secret without the merchant copying them: it sends the merchant to the Stablevoy dashboard with a PKCE challenge, gets a code back on its callback URL and redeems it. This call needs no API key, since the shop has none yet. The code works once, so the call is never retried.
+
+```ts
+import { StablevoyConnect } from 'stablevoy';
+
+const connected = await StablevoyConnect.create().exchange({ code, codeVerifier, site: 'https://shop.example.com' });
+// Store connected.apiKey and connected.webhookSecret; connected.storeName is the store the merchant chose.
+```
+
+When the merchant disconnects the shop, give the key up so it stops working at once. A key that is already revoked answers with `AuthenticationError`, which for a disconnect means the same:
+
+```ts
+await stablevoy.stores.revokeCurrentKey();
+```
+
 ## Verify webhooks
 
 Stablevoy posts an event to your webhook URL when an invoice is paid, overpaid, underpaid, expired, paid late or put on hold. Check the signature before you trust it, using the signing secret shown when you set the webhook in the dashboard. Pass the raw body, exactly as received: a body parsed to JSON and serialised again no longer matches the signature.

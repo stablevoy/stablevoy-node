@@ -76,6 +76,10 @@ export class Fields {
     return Fields.of(this.value(key), `${this.path}.${key}`);
   }
 
+  /** Where a field of this object is, for error messages. */
+  pathOf(key: string): string {
+    return `${this.path}.${key}`;
+  }
   /** The object as decoded, for data this library does not model. */
   raw(): Readonly<Record<string, unknown>> {
     return this.data;

@@ -8,7 +8,8 @@ import type { Sleep } from './Sleep.js';
 import type { Query, Transport } from './Transport.js';
 
 export interface FetchTransportOptions {
-  readonly apiKey: string;
+  /** null only for the one call made before a shop has a key, the connect exchange: then no Authorization is sent. */
+  readonly apiKey: string | null;
   readonly baseUrl: string;
   readonly userAgent: string;
   readonly retries: RetryPolicy;
@@ -21,14 +22,14 @@ export interface FetchTransportOptions {
 
 /**
  * The API over fetch: Bearer API key, JSON in and out, errors as exceptions, and retries only where a repeat cannot do
- * harm (reads, and creates that carry an Idempotency-Key).
+ * harm (reads, deletes, and creates that carry an Idempotency-Key).
  */
 export class FetchTransport implements Transport {
   private readonly options: FetchTransportOptions;
   private readonly baseUrl: string;
 
   constructor(options: FetchTransportOptions) {
-    if (options.apiKey.trim() === '') throw new ConfigurationError('The API key is empty. Create one in the Stablevoy dashboard.');
+    if (options.apiKey !== null && options.apiKey.trim() === '') throw new ConfigurationError('The API key is empty. Create one in the Stablevoy dashboard.');
     if (!(options.timeoutSeconds > 0 && options.timeoutSeconds <= 600)) throw new ConfigurationError(`timeoutSeconds must be more than 0 and at most 600; got ${String(options.timeoutSeconds)}`);
     this.options = options;
     this.baseUrl = FetchTransport.checkedBaseUrl(options.baseUrl);
@@ -36,22 +37,24 @@ export class FetchTransport implements Transport {
 
   get(path: string, query: Query = {}): Promise<unknown> {
     const search = new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)])).toString();
-    return this.send(`${this.baseUrl}${path}${search === '' ? '' : `?${search}`}`, { method: 'GET' }, true);
+    return this.send(`${this.baseUrl}${path}${search === '' ? '' : `?${search}`}`, { method: 'GET' }, true).then((text) => FetchTransport.decode(text));
+  }
+  async delete(path: string): Promise<void> {
+    await this.send(`${this.baseUrl}${path}`, { method: 'DELETE' }, true);
   }
 
   post(path: string, body: unknown, idempotencyKey?: string): Promise<unknown> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (idempotencyKey !== undefined) headers['Idempotency-Key'] = idempotencyKey;
-    return this.send(`${this.baseUrl}${path}`, { method: 'POST', headers, body: JSON.stringify(body) }, idempotencyKey !== undefined);
+    return this.send(`${this.baseUrl}${path}`, { method: 'POST', headers, body: JSON.stringify(body) }, idempotencyKey !== undefined).then((text) => FetchTransport.decode(text));
   }
 
-  private async send(url: string, init: { method: string; headers?: Record<string, string>; body?: string }, retryable: boolean): Promise<unknown> {
-    const request: RequestInit = {
-      ...init,
-      // The API never redirects; following one would carry the key wherever it points.
-      redirect: 'error',
-      headers: { ...init.headers, Authorization: `Bearer ${this.options.apiKey}`, Accept: 'application/json', 'User-Agent': this.options.userAgent },
-    };
+  /** The body of the first successful answer, or the error of the last failed attempt. */
+  private async send(url: string, init: { method: string; headers?: Record<string, string>; body?: string }, retryable: boolean): Promise<string> {
+    const headers: Record<string, string> = { ...init.headers, Accept: 'application/json', 'User-Agent': this.options.userAgent };
+    if (this.options.apiKey !== null) headers['Authorization'] = `Bearer ${this.options.apiKey}`;
+    // The API never redirects; following one would carry the key wherever it points.
+    const request: RequestInit = { ...init, redirect: 'error', headers };
     for (let attempt = 1; ; attempt++) {
       let response: Response;
       let text: string;
@@ -65,7 +68,7 @@ export class FetchTransport implements Transport {
         await this.options.sleep(wait);
         continue;
       }
-      if (response.ok) return FetchTransport.decode(text);
+      if (response.ok) return text;
       const apiError = this.options.errors.fromProblem(response.status, text, FetchTransport.retryAfter(response));
       const wait = retryable && FetchTransport.isRetryable(apiError) ? this.options.retries.waitBefore(attempt, apiError.retryAfterSeconds) : null;
       if (wait === null) throw apiError;

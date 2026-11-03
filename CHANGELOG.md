@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- One-click connect: `StablevoyConnect.create().exchange({ code, codeVerifier, site })` redeems a connect code for the shop's API key and webhook secret (`ConnectedStore`). It needs no API key and is never retried, since the code works once.
+- `stores.revokeCurrentKey()` revokes the key of the client, for a shop that disconnects. It is retried like a read.
+- `Transport` has `delete()`. Your own implementation of `Transport` needs it too. The connection options shared by both clients are exported as `ConnectionOptions`.
 - Reads, and creates that carry an idempotency key, are also retried on the gateway errors 502, 504 and 520 to 524. nginx and Cloudflare answer with them for the few seconds the API restarts, so a call made then no longer fails at once. A 500 is still not retried.
 
 ## 1.2.0
