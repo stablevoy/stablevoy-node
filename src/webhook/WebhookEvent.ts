@@ -3,7 +3,9 @@ import { parseInvoice, type Invoice } from '../model/Invoice.js';
 
 /**
  * A verified webhook. Types: invoice.paid, invoice.overpaid, invoice.underpaid, invoice.expired, invoice.paid_late,
- * invoice.on_hold and webhook.test. Deliveries can repeat: use `id` to process each event once.
+ * invoice.on_hold, invoice.payment_flagged and webhook.test. invoice.payment_flagged: a payment of a settled invoice was
+ * flagged by screening; the invoice keeps its status and `data.payment` holds the payment. Deliveries can repeat: use `id`
+ * to process each event once.
  */
 export interface WebhookEvent {
   readonly id: string;
