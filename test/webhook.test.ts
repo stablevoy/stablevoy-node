@@ -24,6 +24,15 @@ describe('WebhookVerifier', () => {
     }
   });
 
+  it('reads the source of an invoice event and accepts an older event without it', async () => {
+    const current = vectors.cases[2];
+    if (current === undefined) throw new Error('fixture');
+    const withSource = await new WebhookVerifier(vectors.secret, at(current.timestamp)).verify(current.body, current.header);
+    expect(withSource.invoice?.source).toEqual({ kind: 'plugin', platform: 'woocommerce', apiKeyId: '2f6a8c1e-4b3d-4e5f-9a7b-8c9d0e1f2a3b', apiKeyName: null });
+    const older = await new WebhookVerifier(vectors.secret, at(paid.timestamp)).verify(paid.body, paid.header);
+    expect(older.invoice?.source).toBeUndefined();
+  });
+
   it('gives the invoice of an invoice event and the data of others', async () => {
     const event = await new WebhookVerifier(vectors.secret, at(paid.timestamp)).verify(paid.body, paid.header);
     expect(event.invoice).not.toBeNull();
