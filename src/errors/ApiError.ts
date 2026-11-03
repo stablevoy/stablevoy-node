@@ -19,6 +19,9 @@ export interface ApiErrorDetails {
  * code's entry in the error catalog (https://stablevoy.com/docs/api/errors/).
  */
 export class ApiError extends StablevoyError {
+  /** No enabled network of the store has a payout wallet; canAcceptPayments(store) tells it in advance. */
+  static readonly PAYOUT_ADDRESS_NOT_SET = 'payout_address_not_set';
+
   readonly status: number;
   readonly code: string;
   readonly detail: string;

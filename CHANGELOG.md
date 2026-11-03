@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+- `Store` carries `networksWithoutPayout`: the enabled networks with no payout wallet for their family (EVM or Tron) on the account. Buyers are not offered them.
+- `canAcceptPayments(store)` is false when no enabled network has a payout wallet, so every invoice would be refused. Check it before offering the payment method.
+- `ApiError.PAYOUT_ADDRESS_NOT_SET` names the error code an invoice gets in that case.
+
 ## 1.1.0
 
 - `invoices.list()` and `all()` take more filters: `source` (payment link, WooCommerce, Easy Digital Downloads, WHMCS, an API key made by hand, or not recorded; see `InvoiceSourceFilter`), `createdFrom` and `createdTo` (UTC days as YYYY-MM-DD, both ends included) and `search` (an invoice id or the start of the external reference).

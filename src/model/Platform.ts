@@ -7,6 +7,8 @@ export interface Store {
   readonly status: string;
   /** Network keys, e.g. "base", "tron". */
   readonly enabledNetworks: readonly string[];
+  /** Enabled networks with no payout wallet for their family (EVM or Tron) on the account: buyers are not offered them. */
+  readonly networksWithoutPayout: readonly string[];
   readonly minInvoiceUsdCents: number | null;
   readonly maxInvoiceUsdCents: number | null;
   readonly webhookUrl: string | null;
@@ -21,6 +23,7 @@ export function parseStore(f: Fields): Store {
     name: f.string('name'),
     status: f.string('status'),
     enabledNetworks: f.strings('enabledNetworks'),
+    networksWithoutPayout: f.strings('networksWithoutPayout'),
     minInvoiceUsdCents: f.nullableInt('minInvoiceUsdCents'),
     maxInvoiceUsdCents: f.nullableInt('maxInvoiceUsdCents'),
     webhookUrl: f.nullableString('webhookUrl'),
@@ -28,6 +31,14 @@ export function parseStore(f: Fields): Store {
     defaultReturnUrl: f.nullableString('defaultReturnUrl'),
     createdAt: f.date('createdAt'),
   };
+}
+
+/**
+ * False when no enabled network has a payout wallet: every invoice would be refused with payout_address_not_set. Check it
+ * before offering the payment method, and show the merchant networksWithoutPayout when it is not empty.
+ */
+export function canAcceptPayments(store: Store): boolean {
+  return store.enabledNetworks.some((key) => !store.networksWithoutPayout.includes(key));
 }
 
 /** The smallest and largest invoice the platform accepts, in US cents. */
