@@ -87,6 +87,29 @@ describe('retries', () => {
     expect(slept).toEqual([]);
   });
 
+  // While the API restarts, nginx and Cloudflare answer with a gateway error and an HTML page, not a problem document.
+  it.each([502, 504, 520, 521, 522, 523, 524])('retries gateway error %i on reads and idempotent creates only', async (status) => {
+    const gateway = () => new Response('<html>Bad gateway</html>', { status, headers: { 'Content-Type': 'text/html' } });
+    const read = testClient([gateway(), json(200, example('GET', '/v1/limits', 200))]);
+    await read.client.platform.limits();
+    expect(read.slept).toEqual([1]);
+
+    const withKey = testClient([gateway(), json(201, example('POST', '/v1/invoices', 201))]);
+    await withKey.client.invoices.create({ amountUsdCents: 1999 }, { idempotencyKey: 'order-1' });
+    expect(withKey.slept).toEqual([1]);
+
+    const withoutKey = testClient([gateway()]);
+    await expect(withoutKey.client.invoices.create({ amountUsdCents: 1999 })).rejects.toMatchObject({ code: `http_${status}` });
+    expect(withoutKey.slept).toEqual([]);
+  });
+
+  it('does not retry an internal error', async () => {
+    const { client, slept, http } = testClient([json(500, problem(500, 'internal_error', 'Something went wrong'))]);
+    await expect(client.platform.limits()).rejects.toMatchObject({ code: 'internal_error' });
+    expect(slept).toEqual([]);
+    expect(http.requests).toHaveLength(1);
+  });
+
   it('retries a failed connection, then reports it with the cause', async () => {
     const retried = testClient([new TypeError('fetch failed'), json(200, example('GET', '/v1/limits', 200))]);
     await retried.client.platform.limits();

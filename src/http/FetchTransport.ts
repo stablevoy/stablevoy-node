@@ -90,8 +90,12 @@ export class FetchTransport implements Transport {
     return url.origin;
   }
 
+  /**
+   * 429 and 503, and the gateway errors nginx and Cloudflare answer while the API restarts (502, 504, 520 to 524). A 500 is
+   * a fault of the API, not a moment: repeating it would not help.
+   */
   private static isRetryable(error: ApiError): boolean {
-    return error.status === 429 || error.status === 503;
+    return [429, 502, 503, 504, 520, 521, 522, 523, 524].includes(error.status);
   }
 
   private static decode(text: string): unknown {
