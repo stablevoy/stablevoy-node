@@ -77,8 +77,9 @@ describe('WebhookVerifier', () => {
     await expect(new WebhookVerifier(vectors.secret, at(1000)).verify(body, header)).rejects.toThrow(reason);
   });
 
-  it('refuses bytes that are not UTF-8', async () => {
-    await expect(new WebhookVerifier(vectors.secret, at(paid.timestamp)).verify(new Uint8Array([0xff, 0xfe]), paid.header)).rejects.toThrow(TypeError);
+  // A SignatureError, like every other refusal, so "catch SignatureError, answer 400" covers it.
+  it('refuses bytes that are not UTF-8 as a bad signature', async () => {
+    await expect(new WebhookVerifier(vectors.secret, at(paid.timestamp)).verify(new Uint8Array([0xff, 0xfe]), paid.header)).rejects.toThrow(SignatureError);
   });
 
   it('uses the system clock by default, so an old vector is refused', async () => {

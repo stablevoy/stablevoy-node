@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `WebhookVerifier.verify()` refuses a body of bytes that is not UTF-8 with `SignatureError`, like every other bad webhook. Before, it threw a plain `TypeError`, which a `catch (SignatureError)` did not cover. A leading byte order mark is kept, so the checked text is exactly what arrived.
 - `invoices.create()` checks the idempotency key before sending: 1 to 255 printable ASCII characters without spaces, as the API requires. Before, a key with a non-Latin-1 letter made fetch throw, and the call was retried and reported as "Cannot reach the Stablevoy API".
 - Webhook events now carry `source` on their invoice, as the API answers do. Events recorded before 3 November 2026 have none, and still verify.
 - One-click connect: `StablevoyConnect.create().exchange({ code, codeVerifier, site })` redeems a connect code for the shop's API key and webhook secret (`ConnectedStore`). It needs no API key and is never retried, since the code works once.

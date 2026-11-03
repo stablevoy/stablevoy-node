@@ -40,7 +40,7 @@ export class WebhookVerifier {
   }
 
   async verify(rawBody: string | Uint8Array, signatureHeader: string | null | undefined): Promise<WebhookEvent> {
-    const body = typeof rawBody === 'string' ? rawBody : new TextDecoder('utf-8', { fatal: true }).decode(rawBody);
+    const body = typeof rawBody === 'string' ? rawBody : WebhookVerifier.text(rawBody);
     const { timestamp, signatures } = WebhookVerifier.parse(signatureHeader ?? '');
     if (Math.abs(this.clock.now() - timestamp) > this.toleranceSeconds) throw new SignatureError('The webhook signature is too old or from the future; check the server clock');
     const mac = new Uint8Array(await crypto.subtle.sign('HMAC', await this.key, encoder.encode(`${timestamp}.${body}`)));
@@ -59,6 +59,14 @@ export class WebhookVerifier {
     }
   }
 
+  /** The bytes as sent: a leading byte order mark is kept, so the signed text is exactly what arrived. */
+  private static text(bytes: Uint8Array): string {
+    try {
+      return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+    } catch (error) {
+      throw new SignatureError('The webhook body is not UTF-8 text', { cause: error });
+    }
+  }
   private static parse(header: string): { timestamp: number; signatures: string[] } {
     if (header.trim() === '') throw new SignatureError('The X-Stablevoy-Signature header is missing');
     let timestamp: number | null = null;
