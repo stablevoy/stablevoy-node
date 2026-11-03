@@ -22,6 +22,20 @@ describe('invoices', () => {
     expect(result.invoice.expiresAt).toBeInstanceOf(Date);
   });
 
+  // The API takes 1 to 255 printable ASCII characters without spaces. A non-Latin-1 letter used to make fetch throw a
+  // TypeError, which was retried and reported as "Cannot reach the Stablevoy API".
+  it.each(['', 'order 1', 'order\n1', 'заказ-1', 'k'.repeat(256)])('refuses idempotency key %j before sending anything', async (key) => {
+    const { client, http } = testClient([json(201, example('POST', '/v1/invoices', 201))]);
+    await expect(client.invoices.create({ amountUsdCents: 1999 }, { idempotencyKey: key })).rejects.toThrow(/idempotency key/);
+    expect(http.requests).toEqual([]);
+  });
+
+  it('sends an idempotency key as long as the API allows', async () => {
+    const { client, http } = testClient([json(201, example('POST', '/v1/invoices', 201))]);
+    await client.invoices.create({ amountUsdCents: 1999 }, { idempotencyKey: 'k'.repeat(255) });
+    expect(http.last().headers['Idempotency-Key']).toBe('k'.repeat(255));
+  });
+
   it('sends only the fields that are set, and no idempotency key unless given', async () => {
     const { client, http } = testClient([json(201, example('POST', '/v1/invoices', 201))]);
     await client.invoices.create({ amountUsdCents: 500 });

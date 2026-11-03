@@ -4,6 +4,7 @@ import { parseCreatedInvoice, parseInvoice, parseInvoicePage, type CreatedInvoic
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const IDEMPOTENCY_KEY = /^[\x21-\x7e]{1,255}$/;
 
 /** Which invoices to list. Every filter is optional and they combine. Days are whole UTC days, both ends included. */
 export interface InvoiceListFilter {
@@ -36,6 +37,10 @@ export class Invoices {
   async create(input: CreateInvoiceInput, options: { readonly idempotencyKey?: string } = {}): Promise<CreatedInvoice> {
     if (!Number.isSafeInteger(input.amountUsdCents) || input.amountUsdCents < 1) {
       throw new RangeError('amountUsdCents must be a positive whole number of US cents, for example 1999 for $19.99');
+    }
+    // What the API accepts; anything else would be refused there, or make fetch throw on the header.
+    if (options.idempotencyKey !== undefined && !IDEMPOTENCY_KEY.test(options.idempotencyKey)) {
+      throw new RangeError('The idempotency key must be 1 to 255 printable ASCII characters without spaces, such as your order id');
     }
     const body: Record<string, string | number> = { amountUsdCents: input.amountUsdCents };
     if (input.externalReference !== undefined) body['externalReference'] = input.externalReference;
