@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `Store.connectedPlatform`: the plugin connected to the store in one click, or null. `Network` carries `forwarderImplementation`, `explorerAddressUrl` and `rpcUrl`. `ApiError.limitUsdCents` gives the limit an amount was refused for. All three were sent by the API and dropped.
 - `WebhookVerifier.verify()` refuses a body of bytes that is not UTF-8 with `SignatureError`, like every other bad webhook. Before, it threw a plain `TypeError`, which a `catch (SignatureError)` did not cover. A leading byte order mark is kept, so the checked text is exactly what arrived.
 - `invoices.create()` checks the idempotency key before sending: 1 to 255 printable ASCII characters without spaces, as the API requires. Before, a key with a non-Latin-1 letter made fetch throw, and the call was retried and reported as "Cannot reach the Stablevoy API".
 - Webhook events now carry `source` on their invoice, as the API answers do. Events recorded before 3 November 2026 have none, and still verify.

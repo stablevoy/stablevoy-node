@@ -15,6 +15,8 @@ export interface Store {
   readonly websiteUrl: string | null;
   readonly defaultReturnUrl: string | null;
   readonly createdAt: Date;
+  /** The plugin connected to the store in one click ('woocommerce', 'edd', 'whmcs'), or null. */
+  readonly connectedPlatform: string | null;
 }
 
 export function parseStore(f: Fields): Store {
@@ -30,6 +32,7 @@ export function parseStore(f: Fields): Store {
     websiteUrl: f.nullableString('websiteUrl'),
     defaultReturnUrl: f.nullableString('defaultReturnUrl'),
     createdAt: f.date('createdAt'),
+    connectedPlatform: f.nullableString('connectedPlatform'),
   };
 }
 
@@ -79,6 +82,12 @@ export interface Network {
   readonly factoryAddress: string | null;
   readonly explorerUrl: string | null;
   readonly tokens: readonly Token[];
+  /** The forwarder contract the deposit addresses clone; with factoryAddress it is what a manual recovery needs. */
+  readonly forwarderImplementation: string | null;
+  /** The explorer page of an address is this followed by the address. */
+  readonly explorerAddressUrl: string | null;
+  /** A public RPC endpoint of the network. */
+  readonly rpcUrl: string | null;
 }
 
 export function parseNetwork(f: Fields): Network {
@@ -92,5 +101,8 @@ export function parseNetwork(f: Fields): Network {
     factoryAddress: f.nullableString('factoryAddress'),
     explorerUrl: f.nullableString('explorerUrl'),
     tokens: f.objects('tokens', (t) => ({ symbol: t.string('symbol'), address: t.string('address'), decimals: t.int('decimals') })),
+    forwarderImplementation: f.nullableString('forwarderImplementation'),
+    explorerAddressUrl: f.nullableString('explorerAddressUrl'),
+    rpcUrl: f.nullableString('rpcUrl'),
   };
 }

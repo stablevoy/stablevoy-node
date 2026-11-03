@@ -12,6 +12,7 @@ export interface ApiErrorDetails {
   readonly type: string | null;
   readonly issues: readonly ProblemIssue[];
   readonly retryAfterSeconds: number | null;
+  readonly limitUsdCents: number | null;
 }
 
 /**
@@ -30,6 +31,8 @@ export class ApiError extends StablevoyError {
   readonly issues: readonly ProblemIssue[];
   /** From the Retry-After header of a 429 or 503, else null. */
   readonly retryAfterSeconds: number | null;
+  /** For an amount refused by a limit (amount_below_minimum, amount_above_store_limit, ...): that limit in US cents. */
+  readonly limitUsdCents: number | null;
 
   constructor(details: ApiErrorDetails) {
     super(`${details.detail} (HTTP ${details.status}, ${details.code})`);
@@ -39,5 +42,6 @@ export class ApiError extends StablevoyError {
     this.type = details.type;
     this.issues = details.issues;
     this.retryAfterSeconds = details.retryAfterSeconds;
+    this.limitUsdCents = details.limitUsdCents;
   }
 }

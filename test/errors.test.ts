@@ -38,6 +38,14 @@ describe('errors', () => {
     expect((error as ValidationError).issues).toEqual([{ path: 'amountUsdCents', message: 'Expected integer' }]);
   });
 
+  it('gives the limit an amount was refused for', async () => {
+    const body = { ...problem(422, 'amount_above_store_limit', 'The amount is above the store limit.'), limitUsdCents: 50_000 };
+    const error = await testClient([json(422, body)]).client.invoices.create({ amountUsdCents: 99_999 }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'amount_above_store_limit', limitUsdCents: 50_000 });
+    const other = await testClient([json(404, problem(404, 'not_found', 'Invoice not found'))]).client.invoices.get(ID).catch((e: unknown) => e);
+    expect(other).toMatchObject({ limitUsdCents: null });
+  });
+
   it.each(['Bad Gateway', '[1]', '{"issues":"none"}'])('names an error without a usable problem body %j by its status', async (body) => {
     const error = await testClient([json(502, body)], RetryPolicy.none).client.stores.current().catch((e: unknown) => e);
     expect(error).toMatchObject({ code: 'http_502', detail: 'The API answered HTTP 502', type: null, issues: [] });

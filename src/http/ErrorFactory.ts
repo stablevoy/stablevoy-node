@@ -19,6 +19,7 @@ export class ErrorFactory {
       type: stringOr(problem['type'], null),
       issues: ErrorFactory.issues(problem['issues']),
       retryAfterSeconds,
+      limitUsdCents: Number.isSafeInteger(problem['limitUsdCents']) ? (problem['limitUsdCents'] as number) : null,
     };
     if (status === 401) return new AuthenticationError(details);
     if (status === 404) return new NotFoundError(details);

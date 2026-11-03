@@ -9,5 +9,6 @@ export function example(method: string, path: string, status: number): Record<st
     if (typeof node !== 'object' || node === null || !(key in node)) throw new Error(`No example for ${method} ${path} ${status} (missing ${key})`);
     node = (node as Record<string, unknown>)[key];
   }
-  return node as Record<string, unknown>;
+  // A copy: a test that changes its example must not change it for the tests after it.
+  return structuredClone(node) as Record<string, unknown>;
 }

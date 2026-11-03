@@ -38,6 +38,14 @@ describe('store and platform', () => {
     const networks = await client.platform.networks();
     expect(networks.length).toBeGreaterThan(0);
     expect(networks[0]?.tokens.length).toBeGreaterThan(0);
+    const first = (example('GET', '/v1/networks', 200) as unknown as Record<string, unknown>[])[0] ?? {};
+    expect(networks[0]).toMatchObject({ forwarderImplementation: first['forwarderImplementation'], explorerAddressUrl: first['explorerAddressUrl'], rpcUrl: first['rpcUrl'] });
+  });
+
+  it('names the plugin connected to the store', async () => {
+    const store = await testClient([json(200, { ...example('GET', '/v1/store', 200), connectedPlatform: 'woocommerce' })]).client.stores.current();
+    expect(store.connectedPlatform).toBe('woocommerce');
+    expect((await testClient([json(200, example('GET', '/v1/store', 200))]).client.stores.current()).connectedPlatform).toBeNull();
   });
 
   it('refuses networks that are not a list', async () => {
