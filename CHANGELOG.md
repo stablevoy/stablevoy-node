@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0
+
+- `Store.payoutAddresses`: the account's payout wallets per network family (`evm`, `tron`), null when not set. Read only; they are changed in the dashboard with a wallet signature. Needs the API that sends the field (November 2026); an older answer without it is refused as an unexpected response.
+
 ## 1.4.0
 
 - `Store` carries `evmPayoutStatus` (`plain`, `acknowledged`, `unacknowledged`, `unchecked`, or null without an EVM payout wallet, values in `EVM_PAYOUT_STATUS`) and `evmNetworksBlocked`: the enabled EVM networks new invoices leave out while the EVM payout wallet is not confirmed in the dashboard. `evmPayoutNeedsReview(store)` tells it.

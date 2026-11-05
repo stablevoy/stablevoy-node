@@ -34,6 +34,13 @@ export interface Store {
   readonly evmPayoutStatus: string | null;
   /** Enabled EVM networks new invoices leave out because evmPayoutStatus is unacknowledged; empty otherwise. */
   readonly evmNetworksBlocked: readonly string[];
+  /** The account's payout wallets per network family, null when not set. Read only: they change in the dashboard with a wallet signature. */
+  readonly payoutAddresses: PayoutAddresses;
+}
+
+export interface PayoutAddresses {
+  readonly evm: string | null;
+  readonly tron: string | null;
 }
 
 export function parseStore(f: Fields): Store {
@@ -52,7 +59,12 @@ export function parseStore(f: Fields): Store {
     connectedPlatform: f.nullableString('connectedPlatform'),
     evmPayoutStatus: f.nullableString('evmPayoutStatus'),
     evmNetworksBlocked: f.strings('evmNetworksBlocked'),
+    payoutAddresses: parsePayoutAddresses(f.object('payoutAddresses')),
   };
+}
+
+function parsePayoutAddresses(f: Fields): PayoutAddresses {
+  return { evm: f.nullableString('evm'), tron: f.nullableString('tron') };
 }
 
 /**

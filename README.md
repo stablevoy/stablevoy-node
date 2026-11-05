@@ -66,6 +66,7 @@ if (!canAcceptPayments(store)) {
 if (store.networksWithoutPayout.length > 0) {
   // These enabled networks have no payout wallet, so buyers do not see them.
 }
+console.log(store.payoutAddresses); // { evm: '0x...', tron: null }: where payouts go, read only
 if (evmPayoutNeedsReview(store)) {
   // The EVM payout wallet is not confirmed: store.evmNetworksBlocked are not offered until the merchant reviews it in the dashboard.
 }

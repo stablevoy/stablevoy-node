@@ -41,6 +41,15 @@ describe('store and platform', () => {
     expect(ApiError.PAYOUT_ADDRESS_UNACKNOWLEDGED).toBe('payout_address_unacknowledged');
   });
 
+  it('reads the payout addresses of the account', async () => {
+    const store = example('GET', '/v1/store', 200);
+    const read = await testClient([json(200, { ...store, payoutAddresses: { evm: '0x' + 'ab'.repeat(20), tron: null } })]).client.stores.current();
+    expect(read.payoutAddresses).toEqual({ evm: '0x' + 'ab'.repeat(20), tron: null });
+    const old = { ...store };
+    delete old['payoutAddresses'];
+    await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
+  });
+
   it('refuses a store without the EVM payout fields', async () => {
     const old = example('GET', '/v1/store', 200);
     delete old['evmNetworksBlocked'];

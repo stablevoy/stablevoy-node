@@ -96,7 +96,7 @@ describe('Stablevoy client', () => {
     } finally {
       if (original !== undefined) Object.defineProperty(globalThis, 'navigator', original);
     }
-    expect(http.last().headers['User-Agent']).toBe('stablevoy-node/1.4.0 unknown-runtime');
+    expect(http.last().headers['User-Agent']).toBe('stablevoy-node/1.5.0 unknown-runtime');
   });
 
   it('waits for real between retries by default', async () => {
