@@ -3,6 +3,7 @@
 ## 1.5.0
 
 - `Store.payoutAddresses`: the account's payout wallets per network family (`evm`, `tron`), null when not set. Read only; they are changed in the dashboard with a wallet signature. Needs the API that sends the field (November 2026); an older answer without it is refused as an unexpected response.
+- `StablevoyConnect.exchangeApp()` redeems the code an app on the merchant's own computer got from the dashboard (the Stablevoy MCP server's login) for one API key per approved store. Never retried, since the code works once.
 
 ## 1.4.0
 

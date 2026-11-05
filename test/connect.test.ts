@@ -70,6 +70,34 @@ describe('one-click connect', () => {
     expect(down.slept).toEqual([]);
   });
 
+  it('redeems an app connect code for one key per approved store, never retried', async () => {
+    const answer = example('POST', '/v1/connect/app-exchange', 200);
+    const { connect: client, http } = connect(json(200, { stores: [{ id: 's1', name: 'Main', apiKey: 'sk_live_a' }, { id: 's2', name: 'Second', apiKey: 'sk_live_b' }] }));
+    expect(await client.exchangeApp({ code: 'code-1', codeVerifier: 'verifier-1' })).toEqual({
+      stores: [
+        { storeId: 's1', storeName: 'Main', apiKey: 'sk_live_a' },
+        { storeId: 's2', storeName: 'Second', apiKey: 'sk_live_b' },
+      ],
+    });
+    const sent = http.last();
+    expect([sent.url, sent.headers['Authorization'], JSON.parse(sent.body ?? '')]).toEqual(['https://api.stablevoy.com/v1/connect/app-exchange', undefined, { code: 'code-1', codeVerifier: 'verifier-1' }]);
+    expect(Array.isArray(answer['stores'])).toBe(true);
+
+    const busy = connect(json(503, problem(503, 'maintenance', 'Back soon'), { 'Retry-After': '1' }));
+    await expect(busy.connect.exchangeApp({ code: 'c', codeVerifier: 'v' })).rejects.toThrow(MaintenanceError);
+    expect(busy.http.requests).toHaveLength(1);
+  });
+
+  it.each([
+    ['a key that is not a store key', { stores: [{ id: 's1', name: 'Main', apiKey: 'pk_live_1' }] }, 'connected.stores[0].apiKey is not an API key (sk_live_ or sk_test_)'],
+    ['no store at all', { stores: [] }, 'connected.stores is empty'],
+  ])('refuses an app answer with %s', async (_name, body, message) => {
+    const { connect: client } = connect(json(200, body));
+    const error = await client.exchangeApp({ code: 'c', codeVerifier: 'v' }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(UnexpectedResponseError);
+    expect((error as Error).message).toBe(message);
+  });
+
   it('applies the same base URL check and needs no key', () => {
     expect(() => StablevoyConnect.create({ baseUrl: 'http://api.stablevoy.com', fetch: new FakeFetch().fetch })).toThrow(ConfigurationError);
   });
