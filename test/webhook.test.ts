@@ -33,6 +33,15 @@ describe('WebhookVerifier', () => {
     expect(older.invoice?.source).toBeUndefined();
   });
 
+  it('gives the data of a payout attention event without an invoice', async () => {
+    const c = vectors.cases[3];
+    if (c === undefined || c.name !== 'store.payout_attention') throw new Error('fixture');
+    const event = await new WebhookVerifier(vectors.secret, at(c.timestamp)).verify(c.body, c.header);
+    expect(event.type).toBe('store.payout_attention');
+    expect(event.invoice).toBeNull();
+    expect(event.data['payout']).toMatchObject({ status: 'unacknowledged', blockedNetworks: ['base', 'arbitrum'], dashboardUrl: 'https://stablevoy.com/app/' });
+  });
+
   it('gives the invoice of an invoice event and the data of others', async () => {
     const event = await new WebhookVerifier(vectors.secret, at(paid.timestamp)).verify(paid.body, paid.header);
     expect(event.invoice).not.toBeNull();

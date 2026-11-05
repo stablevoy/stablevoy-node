@@ -18,6 +18,12 @@
       "timestamp": 1793448000,
       "body": "{\"id\":\"7d1e9a42-5b3c-4f6e-8a20-3c4d5e6f7a81\",\"type\":\"invoice.paid\",\"createdAt\":\"2026-11-03T12:00:00.000Z\",\"data\":{\"invoice\":{\"id\":\"0b7e2f4c-8d1a-4c3b-9e5f-1a2b3c4d5e6f\",\"storeId\":\"6f1c2b8e-3a4d-4e5f-9a1b-2c3d4e5f6a7b\",\"status\":\"awaiting_payment\",\"amountUsdCents\":1999,\"feeBps\":50,\"invoiceSalt\":\"0x8f3a1c2b4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8\",\"payoutAddress\":\"0x5cC5bc5CC5bC5CC5bC5cc5bC5cC5bc5cc5Bc5cc5\",\"externalReference\":\"order-1042\",\"returnUrl\":\"https://shop.example/checkout/order-received/1042/\",\"expiresAt\":\"2026-10-16T13:00:00.000Z\",\"paidAt\":null,\"holdReason\":null,\"createdAt\":\"2026-10-16T12:00:00.000Z\",\"depositAddresses\":[{\"network\":\"base\",\"address\":\"0x1a2b3C4d5e6F7A8B9c0D1e2f3A4B5c6d7e8F9A0B\",\"payoutAddress\":\"0x5cC5bc5CC5bC5CC5bC5cc5bC5cC5bc5cc5Bc5cc5\",\"amountDueUsdCents\":1999},{\"network\":\"arbitrum\",\"address\":\"0x9F8e7d6c5B4a39281706F5e4d3C2B1A0f9E8d7c6\",\"payoutAddress\":\"0x5cC5bc5CC5bC5CC5bC5cc5bC5cC5bc5cc5Bc5cc5\",\"amountDueUsdCents\":1999}],\"payments\":[],\"source\":{\"kind\":\"plugin\",\"platform\":\"woocommerce\",\"apiKeyId\":\"2f6a8c1e-4b3d-4e5f-9a7b-8c9d0e1f2a3b\"}}}}",
       "header": "t=1793448000,v1=afe2871deb21fea23b84eccc01c690e051148f9cd0287d0442da30bc899d5702"
+    },
+    {
+      "name": "store.payout_attention",
+      "timestamp": 1793904400,
+      "body": "{\"id\":\"0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f\",\"type\":\"store.payout_attention\",\"createdAt\":\"2026-11-05T18:46:40.000Z\",\"data\":{\"store\":{\"id\":\"b7f0c8e2-1d3a-4e5f-9a6b-7c8d9e0f1a2b\"},\"payout\":{\"family\":\"evm\",\"address\":\"0x5cc5bc5cc5bc5cc5bc5cc5bc5cc5bc5cc5bc5cc5\",\"status\":\"unacknowledged\",\"blockedNetworks\":[\"base\",\"arbitrum\"],\"profile\":{\"networks\":[{\"key\":\"arbitrum\",\"displayName\":\"Arbitrum One\",\"kind\":\"none\",\"delegate\":null},{\"key\":\"base\",\"displayName\":\"Base\",\"kind\":\"delegated\",\"delegate\":\"0xdededededededededededededededededededede\"}],\"needsAcknowledgement\":true},\"dashboardUrl\":\"https://stablevoy.com/app/\"}}}",
+      "header": "t=1793904400,v1=82f569ff7168e607a1afe37479052094224b234d36ee458493d6c06f6d3a1f53"
     }
   ]
 }

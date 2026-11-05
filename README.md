@@ -54,10 +54,10 @@ for await (const invoice of stablevoy.invoices.all({ source: InvoiceSourceFilter
 
 ## Check the store before going live
 
-Invoices need a payout wallet for at least one network the store accepts; without one every invoice is refused with `payout_address_not_set`. Read the store of the key to find out in advance, and tell the merchant about networks buyers will not be offered:
+Invoices need a payout wallet for at least one network the store accepts; without one every invoice is refused with `payout_address_not_set`. An EVM payout wallet that is a smart contract wallet or an EIP-7702 delegation must be confirmed in the dashboard, and confirmed again when it changes; until then new invoices leave out the EVM networks, and a store with nothing else is refused with `payout_address_unacknowledged`. Read the store of the key to find out in advance, and tell the merchant about networks buyers will not be offered:
 
 ```ts
-import { canAcceptPayments } from 'stablevoy';
+import { canAcceptPayments, evmPayoutNeedsReview } from 'stablevoy';
 
 const store = await stablevoy.stores.current();
 if (!canAcceptPayments(store)) {
@@ -65,6 +65,9 @@ if (!canAcceptPayments(store)) {
 }
 if (store.networksWithoutPayout.length > 0) {
   // These enabled networks have no payout wallet, so buyers do not see them.
+}
+if (evmPayoutNeedsReview(store)) {
+  // The EVM payout wallet is not confirmed: store.evmNetworksBlocked are not offered until the merchant reviews it in the dashboard.
 }
 ```
 
@@ -87,7 +90,7 @@ await stablevoy.stores.revokeCurrentKey();
 
 ## Verify webhooks
 
-Stablevoy posts an event to your webhook URL when an invoice is paid, overpaid, underpaid, expired, paid late or put on hold. One more, `invoice.payment_flagged`, comes when a later transfer to an invoice that is already paid is flagged by sanctions screening: the invoice keeps its paid status, so this event is not a new payment; the flagged transfer is in `event.data.payment`. Check the signature before you trust it, using the signing secret shown when you set the webhook in the dashboard. Pass the raw body, exactly as received: a body parsed to JSON and serialised again no longer matches the signature.
+Stablevoy posts an event to your webhook URL when an invoice is paid, overpaid, underpaid, expired, paid late or put on hold. One more, `invoice.payment_flagged`, comes when a later transfer to an invoice that is already paid is flagged by sanctions screening: the invoice keeps its paid status, so this event is not a new payment; the flagged transfer is in `event.data.payment`. Another, `store.payout_attention`, comes when the EVM payout wallet of the account becomes unconfirmed and again when it is fine: it carries no invoice, `event.data.payout` has the new `status`, the `blockedNetworks` and a `dashboardUrl`; read `stablevoy.stores.current()` again for the current state. Check the signature before you trust it, using the signing secret shown when you set the webhook in the dashboard. Pass the raw body, exactly as received: a body parsed to JSON and serialised again no longer matches the signature.
 
 Express:
 

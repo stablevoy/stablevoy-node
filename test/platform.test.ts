@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { UnexpectedResponseError } from '../src/errors/UnexpectedResponseError.js';
-import { canAcceptPayments } from '../src/model/Platform.js';
+import { canAcceptPayments, evmPayoutNeedsReview, EVM_PAYOUT_STATUS } from '../src/model/Platform.js';
 import { ApiError } from '../src/errors/ApiError.js';
 import { json } from './support/FakeFetch.js';
 import { example } from './support/openApi.js';
@@ -23,6 +23,28 @@ describe('store and platform', () => {
     expect(canAcceptPayments(await read(['tron']))).toBe(true);
     expect(canAcceptPayments(await read(['base', 'tron']))).toBe(false);
     expect(ApiError.PAYOUT_ADDRESS_NOT_SET).toBe('payout_address_not_set');
+  });
+
+  it('reads the EVM payout status and the networks it blocks', async () => {
+    const store = example('GET', '/v1/store', 200);
+    const plain = await testClient([json(200, store)]).client.stores.current();
+    expect(plain).toMatchObject({ evmPayoutStatus: store['evmPayoutStatus'], evmNetworksBlocked: [] });
+    expect(evmPayoutNeedsReview(plain)).toBe(false);
+    const read = async (fields: Record<string, unknown>) =>
+      testClient([json(200, { ...store, enabledNetworks: ['base', 'tron'], networksWithoutPayout: [], ...fields })]).client.stores.current();
+    const blocked = await read({ evmPayoutStatus: EVM_PAYOUT_STATUS.UNACKNOWLEDGED, evmNetworksBlocked: ['base'] });
+    expect(evmPayoutNeedsReview(blocked)).toBe(true);
+    expect(blocked.evmNetworksBlocked).toEqual(['base']);
+    expect(canAcceptPayments(blocked)).toBe(true);
+    expect(canAcceptPayments(await read({ evmPayoutStatus: 'unacknowledged', evmNetworksBlocked: ['base'], networksWithoutPayout: ['tron'] }))).toBe(false);
+    expect((await read({ evmPayoutStatus: null })).evmPayoutStatus).toBeNull();
+    expect(ApiError.PAYOUT_ADDRESS_UNACKNOWLEDGED).toBe('payout_address_unacknowledged');
+  });
+
+  it('refuses a store without the EVM payout fields', async () => {
+    const old = example('GET', '/v1/store', 200);
+    delete old['evmNetworksBlocked'];
+    await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
   });
 
   it('refuses a store without the payout field', async () => {

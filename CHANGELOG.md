@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0
+
+- `Store` carries `evmPayoutStatus` (`plain`, `acknowledged`, `unacknowledged`, `unchecked`, or null without an EVM payout wallet, values in `EVM_PAYOUT_STATUS`) and `evmNetworksBlocked`: the enabled EVM networks new invoices leave out while the EVM payout wallet is not confirmed in the dashboard. `evmPayoutNeedsReview(store)` tells it.
+- `canAcceptPayments(store)` also counts the blocked EVM networks, so it is false for a store whose only networks are blocked.
+- `ApiError.PAYOUT_ADDRESS_UNACKNOWLEDGED` names the error code an invoice gets when the EVM payout wallet is not confirmed and the store has no other network.
+- New webhook type `store.payout_attention`: the EVM payout wallet of the account became unconfirmed, or is fine again. It carries no invoice; the data has `store` and `payout` (status, blocked networks, dashboard link).
+
 ## 1.3.0
 
 - New webhook type `invoice.payment_flagged`: a payment of an invoice that is already paid, overpaid or paid late was flagged by sanctions screening. The invoice keeps its status; the flagged payment is in the event data under `payment`.

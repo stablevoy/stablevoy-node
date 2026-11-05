@@ -22,6 +22,11 @@ export interface ApiErrorDetails {
 export class ApiError extends StablevoyError {
   /** No enabled network of the store has a payout wallet; canAcceptPayments(store) tells it in advance. */
   static readonly PAYOUT_ADDRESS_NOT_SET = 'payout_address_not_set';
+  /**
+   * The EVM payout wallet is not confirmed in the dashboard (or changed since) and the store has no other network to offer;
+   * evmPayoutNeedsReview(store) and canAcceptPayments(store) tell it in advance.
+   */
+  static readonly PAYOUT_ADDRESS_UNACKNOWLEDGED = 'payout_address_unacknowledged';
 
   readonly status: number;
   readonly code: string;
