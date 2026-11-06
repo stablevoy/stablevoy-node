@@ -22,6 +22,8 @@ export interface Store {
   readonly webhookUrl: string | null;
   readonly websiteUrl: string | null;
   readonly defaultReturnUrl: string | null;
+  /** The store's payment window: how long its invoices can be paid, in minutes, when the request names none; null means the platform default. */
+  readonly invoiceLifetimeMinutes: number | null;
   readonly createdAt: Date;
   /** The plugin connected to the store in one click ('woocommerce', 'edd', 'whmcs'), or null. */
   readonly connectedPlatform: string | null;
@@ -55,6 +57,7 @@ export function parseStore(f: Fields): Store {
     webhookUrl: f.nullableString('webhookUrl'),
     websiteUrl: f.nullableString('websiteUrl'),
     defaultReturnUrl: f.nullableString('defaultReturnUrl'),
+    invoiceLifetimeMinutes: f.nullableInt('invoiceLifetimeMinutes'),
     createdAt: f.date('createdAt'),
     connectedPlatform: f.nullableString('connectedPlatform'),
     evmPayoutStatus: f.nullableString('evmPayoutStatus'),
@@ -85,14 +88,25 @@ export function evmPayoutNeedsReview(store: Store): boolean {
   return store.evmPayoutStatus === EVM_PAYOUT_STATUS.UNACKNOWLEDGED;
 }
 
-/** The smallest and largest invoice the platform accepts, in US cents. */
+/** The smallest and largest invoice the platform accepts, in US cents, and how long an invoice can be paid, in minutes. */
 export interface Limits {
   readonly minInvoiceUsdCents: number;
   readonly maxInvoiceUsdCents: number;
+  /** The lifetime of an invoice when neither the request nor the store names one. */
+  readonly defaultInvoiceLifetimeMinutes: number;
+  /** The bounds of expiresInMinutes and of a store's payment window. */
+  readonly minInvoiceLifetimeMinutes: number;
+  readonly maxInvoiceLifetimeMinutes: number;
 }
 
 export function parseLimits(f: Fields): Limits {
-  return { minInvoiceUsdCents: f.int('minInvoiceUsdCents'), maxInvoiceUsdCents: f.int('maxInvoiceUsdCents') };
+  return {
+    minInvoiceUsdCents: f.int('minInvoiceUsdCents'),
+    maxInvoiceUsdCents: f.int('maxInvoiceUsdCents'),
+    defaultInvoiceLifetimeMinutes: f.int('defaultInvoiceLifetimeMinutes'),
+    minInvoiceLifetimeMinutes: f.int('minInvoiceLifetimeMinutes'),
+    maxInvoiceLifetimeMinutes: f.int('maxInvoiceLifetimeMinutes'),
+  };
 }
 
 /** The live price list: the free volume per payout wallet, the fee and the cap written into the contracts (50 bps is 0.5%). */

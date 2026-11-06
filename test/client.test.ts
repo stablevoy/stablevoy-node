@@ -7,7 +7,7 @@ import { realSleep } from '../src/http/Sleep.js';
 import { readFileSync } from 'node:fs';
 import { FakeFetch, json } from './support/FakeFetch.js';
 
-const limits = { minInvoiceUsdCents: 500, maxInvoiceUsdCents: 100000 };
+const limits = { minInvoiceUsdCents: 500, maxInvoiceUsdCents: 100000, defaultInvoiceLifetimeMinutes: 60, minInvoiceLifetimeMinutes: 15, maxInvoiceLifetimeMinutes: 10080 };
 
 describe('Stablevoy client', () => {
   it('talks to the configured host and names the integration', async () => {
@@ -96,7 +96,7 @@ describe('Stablevoy client', () => {
     } finally {
       if (original !== undefined) Object.defineProperty(globalThis, 'navigator', original);
     }
-    expect(http.last().headers['User-Agent']).toBe('stablevoy-node/1.5.0 unknown-runtime');
+    expect(http.last().headers['User-Agent']).toBe('stablevoy-node/1.6.0 unknown-runtime');
   });
 
   it('waits for real between retries by default', async () => {

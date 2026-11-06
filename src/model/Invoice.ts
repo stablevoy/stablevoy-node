@@ -108,4 +108,9 @@ export interface CreateInvoiceInput {
   readonly amountUsdCents: number;
   readonly externalReference?: string;
   readonly returnUrl?: string;
+  /**
+   * How long the buyer has to pay, 15 to 10080 minutes (7 days). Left out: the store's payment window, else the platform
+   * default (platform.limits() tells it). Use a day or more for an invoice sent by email.
+   */
+  readonly expiresInMinutes?: number;
 }

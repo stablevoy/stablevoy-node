@@ -11,6 +11,8 @@ export const InvoiceStatus = {
   EXPIRED: 'expired',
   PAID_LATE: 'paid_late',
   ON_HOLD: 'on_hold',
+  /** Cancelled before any payment was seen (invoices.cancel()); a payment that still arrives makes it paid_late. */
+  CANCELLED: 'cancelled',
 } as const;
 
 /** The order can be fulfilled: the full amount, or more, has arrived and is confirmed. */

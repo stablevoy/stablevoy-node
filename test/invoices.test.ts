@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { InvoiceStatus, isPaidStatus } from '../src/model/InvoiceStatus.js';
 import { InvoiceSourceFilter } from '../src/model/InvoiceSource.js';
+import { ApiError } from '../src/errors/ApiError.js';
 import { json } from './support/FakeFetch.js';
 import { example } from './support/openApi.js';
 import { testClient } from './support/client.js';
@@ -15,7 +16,7 @@ describe('invoices', () => {
     const sent = http.last();
     expect(sent).toMatchObject({ method: 'POST', url: 'https://api.stablevoy.com/v1/invoices' });
     expect(sent.headers).toMatchObject({ Authorization: 'Bearer sk_test_key', 'Idempotency-Key': 'order-1042', 'Content-Type': 'application/json', Accept: 'application/json' });
-    expect(sent.headers['User-Agent']).toMatch(/^stablevoy-node\/1\.5\.0 /);
+    expect(sent.headers['User-Agent']).toMatch(/^stablevoy-node\/1\.6\.0 /);
     expect(JSON.parse(sent.body ?? '')).toEqual({ amountUsdCents: 1999, externalReference: 'order-1042', returnUrl: 'https://shop.example/thanks' });
     expect(result).toMatchObject({ checkoutUrl: created['checkoutUrl'], replayed: created['replayed'] });
     expect(result.invoice.id).toBe(created['id']);
@@ -71,6 +72,41 @@ describe('invoices', () => {
     const { client } = testClient([json(200, { ...invoice, payments: [payment] })]);
     const result = await client.invoices.get(ID);
     expect(result.payments).toEqual([{ ...payment, detectedAt: new Date('2026-10-25T10:00:00.000Z') }]);
+  });
+
+  it('sends the lifetime of the invoice when given', async () => {
+    const { client, http } = testClient([json(201, example('POST', '/v1/invoices', 201))]);
+    await client.invoices.create({ amountUsdCents: 700, expiresInMinutes: 1440 });
+    expect(JSON.parse(http.last().body ?? '')).toEqual({ amountUsdCents: 700, expiresInMinutes: 1440 });
+  });
+
+  it.each([1.5, Number.NaN, Number.POSITIVE_INFINITY])('refuses the lifetime %s before sending anything', async (minutes) => {
+    const { client, http } = testClient([]);
+    await expect(client.invoices.create({ amountUsdCents: 700, expiresInMinutes: minutes })).rejects.toThrow(/expiresInMinutes/);
+    expect(http.requests).toEqual([]);
+  });
+
+  it('cancels an invoice and reads it back', async () => {
+    const invoice = { ...example('POST', '/v1/invoices/{invoiceId}/cancel', 200), status: InvoiceStatus.CANCELLED };
+    const { client, http } = testClient([json(200, invoice)]);
+    const result = await client.invoices.cancel(ID);
+    expect(http.last()).toMatchObject({ method: 'POST', url: `https://api.stablevoy.com/v1/invoices/${ID}/cancel` });
+    expect(http.last().headers).not.toHaveProperty('Idempotency-Key');
+    expect(result.status).toBe('cancelled');
+    expect(isPaidStatus(result.status)).toBe(false);
+  });
+
+  it('reports an invoice that can no longer be cancelled', async () => {
+    const problem = { type: 'https://stablevoy.com/docs/api/errors/#error-invoice_not_cancellable', title: 'invoice not cancellable', status: 409, code: 'invoice_not_cancellable', detail: 'Only an invoice that is still waiting for its first payment can be cancelled.' };
+    const { client, http } = testClient([json(409, problem)]);
+    await expect(client.invoices.cancel(ID)).rejects.toMatchObject({ status: 409, code: ApiError.INVOICE_NOT_CANCELLABLE });
+    expect(http.requests).toHaveLength(1);
+  });
+
+  it.each(['..', '../stores', ''])('refuses to cancel the invoice id %j before sending anything', async (id) => {
+    const { client, http } = testClient([]);
+    await expect(client.invoices.cancel(id)).rejects.toThrow(RangeError);
+    expect(http.requests).toEqual([]);
   });
 
   it('sends the order id alone when no return URL is given', async () => {

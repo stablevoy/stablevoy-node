@@ -27,6 +27,10 @@ export class ApiError extends StablevoyError {
    * evmPayoutNeedsReview(store) and canAcceptPayments(store) tell it in advance.
    */
   static readonly PAYOUT_ADDRESS_UNACKNOWLEDGED = 'payout_address_unacknowledged';
+  /** invoices.cancel() on an invoice that already has a payment seen on chain, or is paid, expired, underpaid or on hold. */
+  static readonly INVOICE_NOT_CANCELLABLE = 'invoice_not_cancellable';
+  /** expiresInMinutes is outside the bounds platform.limits() gives (15 to 10080 minutes). */
+  static readonly INVALID_INVOICE_LIFETIME = 'invalid_invoice_lifetime';
 
   readonly status: number;
   readonly code: string;

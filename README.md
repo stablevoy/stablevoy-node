@@ -34,6 +34,27 @@ const created = await stablevoy.invoices.create(
 // Send the buyer to created.checkoutUrl
 ```
 
+The buyer has the store's payment window to pay, or the platform default when the store sets none (`stablevoy.platform.limits()` gives it and the bounds). Pass `expiresInMinutes` (15 to 10080, that is 7 days) to set it for one invoice, for example a day or more for an invoice you send by email.
+
+## Cancel an unpaid invoice
+
+When the order is cancelled before the buyer pays, cancel its invoice. The payment page then tells the buyer not to pay, and the webhook `invoice.cancelled` is sent. Cancelling it again returns it unchanged.
+
+```ts
+import { ApiError, InvoiceStatus } from 'stablevoy';
+
+try {
+  const invoice = await stablevoy.invoices.cancel(invoiceId);
+  console.log(invoice.status === InvoiceStatus.CANCELLED);
+} catch (error) {
+  // A payment has already been seen on chain: fulfil or refund the order instead.
+  if (error instanceof ApiError && error.code === ApiError.INVOICE_NOT_CANCELLABLE) console.log(error.detail);
+  else throw error;
+}
+```
+
+Money that still arrives after a cancel reaches your payout wallet as always and makes the invoice `paid_late`.
+
 Read an invoice with `stablevoy.invoices.get(id)`, or walk them all:
 
 ```ts

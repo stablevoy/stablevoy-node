@@ -42,16 +42,36 @@ export class Invoices {
     if (options.idempotencyKey !== undefined && !IDEMPOTENCY_KEY.test(options.idempotencyKey)) {
       throw new RangeError('The idempotency key must be 1 to 255 printable ASCII characters without spaces, such as your order id');
     }
+    // The bounds (platform.limits()) are checked by the API, which answers invalid_invoice_lifetime.
+    if (input.expiresInMinutes !== undefined && !Number.isSafeInteger(input.expiresInMinutes)) {
+      throw new RangeError('expiresInMinutes must be a whole number of minutes, for example 60 or 1440');
+    }
     const body: Record<string, string | number> = { amountUsdCents: input.amountUsdCents };
     if (input.externalReference !== undefined) body['externalReference'] = input.externalReference;
     if (input.returnUrl !== undefined) body['returnUrl'] = input.returnUrl;
+    if (input.expiresInMinutes !== undefined) body['expiresInMinutes'] = input.expiresInMinutes;
     return parseCreatedInvoice(Fields.of(await this.transport.post('/v1/invoices', body, options.idempotencyKey), 'invoice'));
   }
 
   async get(invoiceId: string): Promise<Invoice> {
-    // Ids are UUIDs; anything else (such as "..") could make the request reach another path with your key.
-    if (!UUID.test(invoiceId)) throw new RangeError('An invoice id is a UUID, like 7c3360b5-e8cc-4775-8a13-7324d4f1296e');
+    Invoices.checkId(invoiceId);
     return parseInvoice(Fields.of(await this.transport.get(`/v1/invoices/${invoiceId}`), 'invoice'));
+  }
+
+  /**
+   * Cancels an invoice that is still waiting for its first payment, for example when the order was cancelled: the payment
+   * page tells the buyer not to pay and the webhook invoice.cancelled is sent. Cancelling it again returns it unchanged.
+   * Once a payment has been seen the API refuses with ApiError.INVOICE_NOT_CANCELLABLE; money that still arrives after a
+   * cancel makes the invoice paid_late. Not retried on its own; calling it again is safe.
+   */
+  async cancel(invoiceId: string): Promise<Invoice> {
+    Invoices.checkId(invoiceId);
+    return parseInvoice(Fields.of(await this.transport.post(`/v1/invoices/${invoiceId}/cancel`, {}), 'invoice'));
+  }
+
+  // Ids are UUIDs; anything else (such as "..") could make the request reach another path with your key.
+  private static checkId(invoiceId: string): void {
+    if (!UUID.test(invoiceId)) throw new RangeError('An invoice id is a UUID, like 7c3360b5-e8cc-4775-8a13-7324d4f1296e');
   }
 
   /** One page of invoices, newest first. */

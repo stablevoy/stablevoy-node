@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0
+
+- `invoices.cancel(id)` cancels an invoice that is still waiting for its first payment: the payment page tells the buyer not to pay and the webhook `invoice.cancelled` is sent. Cancelling it again returns it unchanged. Once a payment has been seen the API refuses with `ApiError.INVOICE_NOT_CANCELLABLE`; money that still arrives after a cancel makes the invoice `paid_late`. New status `InvoiceStatus.CANCELLED` and webhook type `invoice.cancelled`.
+- `invoices.create()` takes `expiresInMinutes`: how long the buyer has to pay this invoice, 15 to 10080 minutes (7 days). Outside the bounds the API answers `ApiError.INVALID_INVOICE_LIFETIME`.
+- `Store.invoiceLifetimeMinutes`: the store's payment window, null for the platform default. `Limits` carries `defaultInvoiceLifetimeMinutes`, `minInvoiceLifetimeMinutes` and `maxInvoiceLifetimeMinutes`. Both need the API of 6 November 2026; an older answer without them is refused as an unexpected response.
+
 ## 1.5.0
 
 - `Store.payoutAddresses`: the account's payout wallets per network family (`evm`, `tron`), null when not set. Read only; they are changed in the dashboard with a wallet signature. Needs the API that sends the field (November 2026); an older answer without it is refused as an unexpected response.

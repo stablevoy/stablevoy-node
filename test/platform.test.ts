@@ -50,6 +50,21 @@ describe('store and platform', () => {
     await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
   });
 
+  it('reads the payment window of the store, null for the platform default', async () => {
+    const store = example('GET', '/v1/store', 200);
+    expect((await testClient([json(200, store)]).client.stores.current()).invoiceLifetimeMinutes).toBeNull();
+    expect((await testClient([json(200, { ...store, invoiceLifetimeMinutes: 1440 })]).client.stores.current()).invoiceLifetimeMinutes).toBe(1440);
+    const old = { ...store };
+    delete old['invoiceLifetimeMinutes'];
+    await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
+  });
+
+  it('reads the invoice lifetime from the limits', async () => {
+    const limits = example('GET', '/v1/limits', 200);
+    expect(await testClient([json(200, limits)]).client.platform.limits()).toEqual(limits);
+    expect(ApiError.INVALID_INVOICE_LIFETIME).toBe('invalid_invoice_lifetime');
+  });
+
   it('refuses a store without the EVM payout fields', async () => {
     const old = example('GET', '/v1/store', 200);
     delete old['evmNetworksBlocked'];
