@@ -1,6 +1,7 @@
 import type { Query, Transport } from '../http/Transport.js';
 import { Fields } from '../model/Fields.js';
 import { parseCreatedInvoice, parseInvoice, parseInvoicePage, type CreatedInvoice, type CreateInvoiceInput, type Invoice, type InvoicePage } from '../model/Invoice.js';
+import { parseInvoiceSummary, SummaryPeriod, type InvoiceSummary, type InvoiceSummaryInput } from '../model/InvoiceSummary.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -91,6 +92,31 @@ export class Invoices {
     if (options.createdTo !== undefined) query['createdTo'] = options.createdTo;
     if (options.search !== undefined) query['q'] = options.search;
     return parseInvoicePage(Fields.of(await this.transport.get('/v1/invoices', query satisfies Query), 'invoices'));
+  }
+
+  /**
+   * Totals of the invoices created in a range of UTC days: counts per status, the invoiced amount and the money received,
+   * also per network and token. Pass a period (SummaryPeriod) or both days. One request covers at most 92 days, so ask for
+   * a year in four parts; a longer range is refused with ApiError.INVALID_INVOICE_FILTER. The API allows 30 calls a minute per store.
+   */
+  async summary(input: InvoiceSummaryInput): Promise<InvoiceSummary> {
+    // Read loosely: a JavaScript caller can pass any mix, and it is refused here rather than by the API.
+    const given = input as { readonly period?: unknown; readonly createdFrom?: unknown; readonly createdTo?: unknown };
+    const query: Record<string, string> = {};
+    const hasDays = given.createdFrom !== undefined || given.createdTo !== undefined;
+    if ((given.period !== undefined) === hasDays) throw new RangeError('Pass either period or both createdFrom and createdTo');
+    if (hasDays) {
+      for (const name of ['createdFrom', 'createdTo'] as const) {
+        const day = given[name];
+        if (typeof day !== 'string' || !DAY.test(day)) throw new RangeError(`${name} must be a date as YYYY-MM-DD`);
+        query[name] = day;
+      }
+    } else {
+      const period = given.period;
+      if (typeof period !== 'string' || !(Object.values(SummaryPeriod) as string[]).includes(period)) throw new RangeError(`period must be one of ${Object.values(SummaryPeriod).join(', ')}`);
+      query['period'] = period;
+    }
+    return parseInvoiceSummary(Fields.of(await this.transport.get('/v1/invoices/summary', query satisfies Query), 'summary'));
   }
 
   /** Every invoice, newest first, fetching the pages as you iterate: `for await (const invoice of invoices.all())`. */

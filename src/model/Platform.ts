@@ -97,6 +97,21 @@ export interface Limits {
   /** The bounds of expiresInMinutes and of a store's payment window. */
   readonly minInvoiceLifetimeMinutes: number;
   readonly maxInvoiceLifetimeMinutes: number;
+  /** How many active API keys one store may hold per integration; revoked keys do not count. */
+  readonly apiKeysPerStore: ApiKeysPerStore;
+  /** Invoices awaiting payment one store may have at once; over it invoices.create() fails with ApiError.OPEN_INVOICE_LIMIT_REACHED. */
+  readonly openInvoicesPerStore: number;
+  /** New invoices one store may create per minute; over it the API answers 429 (RateLimitedError). */
+  readonly invoicesPerMinutePerStore: number;
+}
+
+export interface ApiKeysPerStore {
+  /** Keys of one plugin (WooCommerce, Easy Digital Downloads, WHMCS). */
+  readonly plugin: number;
+  /** AI assistant (MCP) keys, one per computer. */
+  readonly mcp: number;
+  /** Keys for your own code. */
+  readonly api: number;
 }
 
 export function parseLimits(f: Fields): Limits {
@@ -106,7 +121,14 @@ export function parseLimits(f: Fields): Limits {
     defaultInvoiceLifetimeMinutes: f.int('defaultInvoiceLifetimeMinutes'),
     minInvoiceLifetimeMinutes: f.int('minInvoiceLifetimeMinutes'),
     maxInvoiceLifetimeMinutes: f.int('maxInvoiceLifetimeMinutes'),
+    apiKeysPerStore: parseApiKeysPerStore(f.object('apiKeysPerStore')),
+    openInvoicesPerStore: f.int('openInvoicesPerStore'),
+    invoicesPerMinutePerStore: f.int('invoicesPerMinutePerStore'),
   };
+}
+
+function parseApiKeysPerStore(f: Fields): ApiKeysPerStore {
+  return { plugin: f.int('plugin'), mcp: f.int('mcp'), api: f.int('api') };
 }
 
 /** The live price list: the free volume per payout wallet, the fee and the cap written into the contracts (50 bps is 0.5%). */

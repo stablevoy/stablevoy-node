@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.0
+
+- `invoices.summary({ period })` or `invoices.summary({ createdFrom, createdTo })`: totals of the invoices created in a range of UTC days, with the count per status, the invoiced amount and the money received, also per network and token. Periods are in `SummaryPeriod`; one request covers at most 92 days, and a longer range is refused with `ApiError.INVALID_INVOICE_FILTER`.
+- `unmatchedTransfers.list()`: transfers to the payout wallet that matched no invoice, on the networks of the key's store, each with `sharedWithStores`. Read only; they are attached to an invoice in the dashboard.
+- `Limits` carries `apiKeysPerStore` (`plugin`, `mcp`, `api`), `openInvoicesPerStore` and `invoicesPerMinutePerStore`. New `ApiError.OPEN_INVOICE_LIMIT_REACHED`. These need the API of 7 November 2026; an older answer without them is refused as an unexpected response.
+- `Stablevoy` takes `UnmatchedTransfers` as a fourth constructor argument; `Stablevoy.create()` and `Stablevoy.fromTransport()` are unchanged.
+
 ## 1.6.0
 
 - `invoices.cancel(id)` cancels an invoice that is still waiting for its first payment: the payment page tells the buyer not to pay and the webhook `invoice.cancelled` is sent. Cancelling it again returns it unchanged. Once a payment has been seen the API refuses with `ApiError.INVOICE_NOT_CANCELLABLE`; money that still arrives after a cancel makes the invoice `paid_late`. New status `InvoiceStatus.CANCELLED` and webhook type `invoice.cancelled`.

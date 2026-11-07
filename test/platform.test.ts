@@ -65,6 +65,17 @@ describe('store and platform', () => {
     expect(ApiError.INVALID_INVOICE_LIFETIME).toBe('invalid_invoice_lifetime');
   });
 
+  it('reads the per-store limits and refuses limits without them', async () => {
+    const limits = await testClient([json(200, example('GET', '/v1/limits', 200))]).client.platform.limits();
+    expect(limits.apiKeysPerStore.mcp).toBeGreaterThan(0);
+    expect(limits.openInvoicesPerStore).toBeGreaterThan(0);
+    expect(limits.invoicesPerMinutePerStore).toBeGreaterThan(0);
+    expect(ApiError.OPEN_INVOICE_LIMIT_REACHED).toBe('open_invoice_limit_reached');
+    const old = example('GET', '/v1/limits', 200);
+    delete old['openInvoicesPerStore'];
+    await expect(testClient([json(200, old)]).client.platform.limits()).rejects.toBeInstanceOf(UnexpectedResponseError);
+  });
+
   it('refuses a store without the EVM payout fields', async () => {
     const old = example('GET', '/v1/store', 200);
     delete old['evmNetworksBlocked'];
