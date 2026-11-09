@@ -205,6 +205,10 @@ import { RetryPolicy, Stablevoy } from 'stablevoy';
 const stablevoy = Stablevoy.create({ apiKey, retries: new RetryPolicy(3, 30) });
 ```
 
+## Questions and bugs
+
+Ask questions in [GitHub Discussions](https://github.com/orgs/stablevoy/discussions/categories/sdks), category SDKs. Open an issue in this repository for a bug, with the version and the smallest example that shows it. Never paste a key, not even a test one.
+
 ## Links
 
 - [API reference](https://stablevoy.com/docs/api/)
