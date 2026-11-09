@@ -41,8 +41,8 @@ describe('one-click connect', () => {
   });
 
   it.each([
-    ['not a store key', { apiKey: 'pk_live_1' }, 'connected.apiKey is not an API key (sk_live_ or sk_test_)'],
-    ['not a webhook secret', { webhookSecret: 'secret' }, 'connected.webhookSecret is not a webhook secret (whsec_)'],
+    ['not a store key', { apiKey: 'pk_live_1' }, 'connected.apiKey is not an API key (svk_live_, svk_test_, or the older sk_live_, sk_test_)'],
+    ['not a webhook secret', { webhookSecret: 'secret' }, 'connected.webhookSecret is not a webhook secret (svwhsec_, or the older whsec_)'],
     ['no store', { store: undefined }, 'connected.store is missing'],
     ['no store name', { store: { id: 'x' } }, 'connected.store.name is missing'],
   ])('refuses an answer with %s', async (_name, change, message) => {
@@ -89,7 +89,7 @@ describe('one-click connect', () => {
   });
 
   it.each([
-    ['a key that is not a store key', { stores: [{ id: 's1', name: 'Main', apiKey: 'pk_live_1' }] }, 'connected.stores[0].apiKey is not an API key (sk_live_ or sk_test_)'],
+    ['a key that is not a store key', { stores: [{ id: 's1', name: 'Main', apiKey: 'pk_live_1' }] }, 'connected.stores[0].apiKey is not an API key (svk_live_, svk_test_, or the older sk_live_, sk_test_)'],
     ['no store at all', { stores: [] }, 'connected.stores is empty'],
   ])('refuses an app answer with %s', async (_name, body, message) => {
     const { connect: client } = connect(json(200, body));

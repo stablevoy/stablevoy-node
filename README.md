@@ -181,6 +181,18 @@ export async function POST(request: Request) {
 }
 ```
 
+## Check a pasted key
+
+API keys are `svk_live_...` or `svk_test_...` and webhook signing secrets `svwhsec_...`; both end in a checksum. Keys made before this format (`sk_live_`, `sk_test_`, `whsec_`) keep working.
+
+```ts
+import { checkApiKey } from 'stablevoy';
+
+if (checkApiKey(input) === 'mistyped') console.log('A character is wrong or missing: copy the key again from the dashboard.');
+```
+
+`checkApiKey` and `checkWebhookSecret` answer `ok`, `mistyped` or `not_a_key`, without any request.
+
 ## Errors and retries
 
 Every error extends `StablevoyError`. API errors are `ApiError` with the HTTP `status`, a stable `code`, a readable `detail` and a link to the [error catalog](https://stablevoy.com/docs/api/errors/); the ones you may want to handle on their own are `AuthenticationError`, `ValidationError` (with `issues`), `NotFoundError`, `RateLimitedError` and `MaintenanceError`. `TransportError` means no answer at all.

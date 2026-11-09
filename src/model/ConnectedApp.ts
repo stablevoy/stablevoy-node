@@ -1,5 +1,6 @@
 import { UnexpectedResponseError } from '../errors/UnexpectedResponseError.js';
 import type { Fields } from './Fields.js';
+import { checkApiKey } from '../keys/KeyFormat.js';
 
 /** One store an app on the merchant's computer was approved for, with its new API key. */
 export interface ConnectedAppStore {
@@ -16,7 +17,7 @@ export interface ConnectedApp {
 export function parseConnectedApp(f: Fields): ConnectedApp {
   const stores = f.objects('stores', (s) => {
     const apiKey = s.string('apiKey');
-    if (!/^sk_(live|test)_/.test(apiKey)) throw new UnexpectedResponseError(`${s.pathOf('apiKey')} is not an API key (sk_live_ or sk_test_)`);
+    if (checkApiKey(apiKey) !== 'ok') throw new UnexpectedResponseError(`${s.pathOf('apiKey')} is not an API key (svk_live_, svk_test_, or the older sk_live_, sk_test_)`);
     return { storeId: s.string('id'), storeName: s.string('name'), apiKey };
   });
   if (stores.length === 0) throw new UnexpectedResponseError(`${f.pathOf('stores')} is empty`);
