@@ -117,7 +117,9 @@ if (!canAcceptPayments(store)) {
 if (store.networksWithoutPayout.length > 0) {
   // These enabled networks have no payout wallet, so buyers do not see them.
 }
-console.log(store.payoutAddresses); // { evm: '0x...', tron: null }: where payouts go, read only
+console.log(store.payoutAddresses); // { evm: '0x...', tron: null }: where this store's payouts go, read only
+console.log(store.payoutSources); // { evm: 'store', tron: null }: the store's own wallet, or 'account' for the account one
+console.log(store.accountPayoutAddresses); // the account wallets, also when the store has its own
 if (evmPayoutNeedsReview(store)) {
   // The EVM payout wallet is not confirmed: store.evmNetworksBlocked are not offered until the merchant reviews it in the dashboard.
 }
@@ -142,7 +144,7 @@ await stablevoy.stores.revokeCurrentKey();
 
 ## Verify webhooks
 
-Stablevoy posts an event to your webhook URL when an invoice is paid, overpaid, underpaid, expired, paid late or put on hold. One more, `invoice.payment_flagged`, comes when a later transfer to an invoice that is already paid is flagged by sanctions screening: the invoice keeps its paid status, so this event is not a new payment; the flagged transfer is in `event.data.payment`. Another, `store.payout_attention`, comes when the EVM payout wallet of the account becomes unconfirmed and again when it is fine: it carries no invoice, `event.data.payout` has the new `status`, the `blockedNetworks` and a `dashboardUrl`; read `stablevoy.stores.current()` again for the current state. Check the signature before you trust it, using the signing secret shown when you set the webhook in the dashboard. Pass the raw body, exactly as received: a body parsed to JSON and serialised again no longer matches the signature.
+Stablevoy posts an event to your webhook URL when an invoice is paid, overpaid, underpaid, expired, paid late or put on hold. One more, `invoice.payment_flagged`, comes when a later transfer to an invoice that is already paid is flagged by sanctions screening: the invoice keeps its paid status, so this event is not a new payment; the flagged transfer is in `event.data.payment`. Another, `store.payout_attention`, comes when the EVM payout wallet this store uses (its own or the account's) becomes unconfirmed and again when it is fine: it carries no invoice, `event.data.payout` has the new `status`, its `source` (`store` or `account`), the `blockedNetworks` and a `dashboardUrl`; read `stablevoy.stores.current()` again for the current state. Two more carry no invoice either: `api_key.leaked` when GitHub found an API key of the store in public code (the key is already revoked: connect again or create a new key) and `webhook_secret.leaked` for the webhook signing secret (rotate it in the dashboard). Check the signature before you trust it, using the signing secret shown when you set the webhook in the dashboard. Pass the raw body, exactly as received: a body parsed to JSON and serialised again no longer matches the signature.
 
 Express:
 

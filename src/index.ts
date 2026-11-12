@@ -17,8 +17,8 @@ export { SummaryPeriod, type InvoiceSummary, type InvoiceSummaryInput, type Netw
 export { InvoiceStatus, isPaidStatus } from './model/InvoiceStatus.js';
 export { InvoiceSourceFilter, InvoiceSourceKind, type InvoiceSource } from './model/InvoiceSource.js';
 export type { CreateInvoiceInput, CreatedInvoice, DepositAddress, Invoice, InvoicePage, Payment } from './model/Invoice.js';
-export type { ApiKeysPerStore, Limits, Network, PayoutAddresses, Pricing, Store, Token } from './model/Platform.js';
-export { canAcceptPayments, evmPayoutNeedsReview, EVM_PAYOUT_STATUS } from './model/Platform.js';
+export type { ApiKeysPerStore, Limits, Network, PayoutAddresses, PayoutSources, Pricing, Store, Token } from './model/Platform.js';
+export { canAcceptPayments, evmPayoutNeedsReview, EVM_PAYOUT_STATUS, PAYOUT_SOURCE } from './model/Platform.js';
 export { WebhookVerifier, type WebhookVerifierOptions } from './webhook/WebhookVerifier.js';
 export type { WebhookEvent } from './webhook/WebhookEvent.js';
 export type { Clock } from './time/Clock.js';

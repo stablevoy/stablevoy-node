@@ -12,6 +12,12 @@ import { testClient } from './support/client.js';
 
 const SITE = 'https://shop.example.com';
 
+/**
+ * The exchange example of the API document with whole secrets: the document shows shortened ones (svk_live_4f9a...e0f9), which
+ * the SDK rightly refuses, so a real-looking answer uses the older formats the SDK still accepts.
+ */
+const exchangeAnswer = (): Record<string, unknown> => ({ ...example('POST', '/v1/connect/exchange', 200), apiKey: 'sk_live_example', webhookSecret: 'whsec_example' });
+
 function connect(...answers: (Response | Error)[]): { connect: StablevoyConnect; http: FakeFetch; slept: number[] } {
   const http = new FakeFetch(...answers);
   const slept: number[] = [];
@@ -27,7 +33,7 @@ function connect(...answers: (Response | Error)[]): { connect: StablevoyConnect;
 
 describe('one-click connect', () => {
   it('redeems a connect code without an API key', async () => {
-    const answer = example('POST', '/v1/connect/exchange', 200);
+    const answer = exchangeAnswer();
     const { connect: client, http } = connect(json(200, answer));
     const store = await client.exchange({ code: 'code-1', codeVerifier: 'verifier-1', site: SITE });
     const sent = http.last();
@@ -46,7 +52,7 @@ describe('one-click connect', () => {
     ['no store', { store: undefined }, 'connected.store is missing'],
     ['no store name', { store: { id: 'x' } }, 'connected.store.name is missing'],
   ])('refuses an answer with %s', async (_name, change, message) => {
-    const answer: Record<string, unknown> = { ...example('POST', '/v1/connect/exchange', 200), ...change };
+    const answer: Record<string, unknown> = { ...exchangeAnswer(), ...change };
     if (answer['store'] === undefined) delete answer['store'];
     const { connect: client } = connect(json(200, answer));
     const error = await client.exchange({ code: 'c', codeVerifier: 'v', site: SITE }).catch((e: unknown) => e);

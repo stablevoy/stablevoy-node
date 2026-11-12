@@ -1,3 +1,4 @@
+import { VERSION } from '../src/version.js';
 import { describe, expect, it } from 'vitest';
 import { InvoiceStatus, isPaidStatus } from '../src/model/InvoiceStatus.js';
 import { InvoiceSourceFilter } from '../src/model/InvoiceSource.js';
@@ -16,7 +17,7 @@ describe('invoices', () => {
     const sent = http.last();
     expect(sent).toMatchObject({ method: 'POST', url: 'https://api.stablevoy.com/v1/invoices' });
     expect(sent.headers).toMatchObject({ Authorization: 'Bearer sk_test_key', 'Idempotency-Key': 'order-1042', 'Content-Type': 'application/json', Accept: 'application/json' });
-    expect(sent.headers['User-Agent']).toMatch(/^stablevoy-node\/1\.8\.0 /);
+    expect(sent.headers['User-Agent']).toMatch(new RegExp(`^stablevoy-node/${VERSION.replaceAll('.', '\\.')} `));
     expect(JSON.parse(sent.body ?? '')).toEqual({ amountUsdCents: 1999, externalReference: 'order-1042', returnUrl: 'https://shop.example/thanks' });
     expect(result).toMatchObject({ checkoutUrl: created['checkoutUrl'], replayed: created['replayed'] });
     expect(result.invoice.id).toBe(created['id']);

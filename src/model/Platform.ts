@@ -8,6 +8,12 @@ export const EVM_PAYOUT_STATUS = {
   UNCHECKED: 'unchecked',
 } as const;
 
+/** Values of Store.payoutSources: the store's own payout wallet, or the account's. */
+export const PAYOUT_SOURCE = {
+  STORE: 'store',
+  ACCOUNT: 'account',
+} as const;
+
 /** The store the API key belongs to. */
 export interface Store {
   readonly id: string;
@@ -15,7 +21,7 @@ export interface Store {
   readonly status: string;
   /** Network keys, e.g. "base", "tron". */
   readonly enabledNetworks: readonly string[];
-  /** Enabled networks with no payout wallet for their family (EVM or Tron) on the account: buyers are not offered them. */
+  /** Enabled networks with no payout wallet for their family (EVM or Tron), neither the store's own nor the account's: buyers are not offered them. */
   readonly networksWithoutPayout: readonly string[];
   readonly minInvoiceUsdCents: number | null;
   readonly maxInvoiceUsdCents: number | null;
@@ -28,16 +34,30 @@ export interface Store {
   /** The plugin connected to the store in one click ('woocommerce', 'edd', 'whmcs'), or null. */
   readonly connectedPlatform: string | null;
   /**
-   * The EVM payout wallet as last read on every EVM network: plain (a regular wallet), acknowledged (a smart contract wallet
+   * The EVM payout wallet this store uses (its own or the account's, see payoutSources) as last read on every EVM network: plain (a regular wallet), acknowledged (a smart contract wallet
    * or EIP-7702 delegation the merchant confirmed), unacknowledged (not confirmed, or changed since: the EVM networks are
    * left out of new invoices until the merchant reviews it in the dashboard), unchecked (not read yet), or null when the
-   * account has no EVM payout wallet.
+   * store has no EVM payout wallet.
    */
   readonly evmPayoutStatus: string | null;
   /** Enabled EVM networks new invoices leave out because evmPayoutStatus is unacknowledged; empty otherwise. */
   readonly evmNetworksBlocked: readonly string[];
-  /** The account's payout wallets per network family, null when not set. Read only: they change in the dashboard with a wallet signature. */
+  /**
+   * The payout wallets this store's new invoices use, per network family: the store's own, else the account's; null when neither
+   * is set. Read only: they change in the dashboard with a wallet signature.
+   */
   readonly payoutAddresses: PayoutAddresses;
+  /** Where each payout wallet comes from: 'store' or 'account' (PAYOUT_SOURCE), null when the store has none for that family. */
+  readonly payoutSources: PayoutSources;
+  /** The account's payout wallets, also when the store uses its own. */
+  readonly accountPayoutAddresses: PayoutAddresses;
+  /** When the store was archived; null while it is not. The keys of an archived store are revoked. */
+  readonly archivedAt: Date | null;
+}
+
+export interface PayoutSources {
+  readonly evm: string | null;
+  readonly tron: string | null;
 }
 
 export interface PayoutAddresses {
@@ -63,7 +83,14 @@ export function parseStore(f: Fields): Store {
     evmPayoutStatus: f.nullableString('evmPayoutStatus'),
     evmNetworksBlocked: f.strings('evmNetworksBlocked'),
     payoutAddresses: parsePayoutAddresses(f.object('payoutAddresses')),
+    payoutSources: parsePayoutSources(f.object('payoutSources')),
+    accountPayoutAddresses: parsePayoutAddresses(f.object('accountPayoutAddresses')),
+    archivedAt: f.nullableDate('archivedAt'),
   };
+}
+
+function parsePayoutSources(f: Fields): PayoutSources {
+  return { evm: f.nullableString('evm'), tron: f.nullableString('tron') };
 }
 
 function parsePayoutAddresses(f: Fields): PayoutAddresses {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { UnexpectedResponseError } from '../src/errors/UnexpectedResponseError.js';
-import { canAcceptPayments, evmPayoutNeedsReview, EVM_PAYOUT_STATUS } from '../src/model/Platform.js';
+import { canAcceptPayments, evmPayoutNeedsReview, EVM_PAYOUT_STATUS, PAYOUT_SOURCE } from '../src/model/Platform.js';
 import { ApiError } from '../src/errors/ApiError.js';
 import { json } from './support/FakeFetch.js';
 import { example } from './support/openApi.js';
@@ -48,6 +48,19 @@ describe('store and platform', () => {
     const old = { ...store };
     delete old['payoutAddresses'];
     await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
+  });
+
+  it('reads where each payout wallet comes from, the account wallets and the archive date (store payout addresses)', async () => {
+    const store = example('GET', '/v1/store', 200);
+    const read = await testClient([json(200, { ...store, payoutSources: { evm: PAYOUT_SOURCE.STORE, tron: null }, accountPayoutAddresses: { evm: '0x' + 'cd'.repeat(20), tron: null } })]).client.stores.current();
+    expect(read.payoutSources).toEqual({ evm: 'store', tron: null });
+    expect(read.accountPayoutAddresses).toEqual({ evm: '0x' + 'cd'.repeat(20), tron: null });
+    expect(read.archivedAt).toBeNull();
+    expect((await testClient([json(200, { ...store, archivedAt: '2026-11-10T10:00:00.000Z' })]).client.stores.current()).archivedAt).toEqual(new Date('2026-11-10T10:00:00.000Z'));
+    for (const field of ['payoutSources', 'accountPayoutAddresses', 'archivedAt']) {
+      const old = Object.fromEntries(Object.entries(store).filter(([key]) => key !== field));
+      await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
+    }
   });
 
   it('reads the payment window of the store, null for the platform default', async () => {
