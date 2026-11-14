@@ -76,6 +76,11 @@ export class Fields {
     return Fields.of(this.value(key), `${this.path}.${key}`);
   }
 
+  /** An object or null; the key itself must be there. */
+  nullableObject(key: string): Fields | null {
+    return this.value(key) === null ? null : this.object(key);
+  }
+
   /** Where a field of this object is, for error messages. */
   pathOf(key: string): string {
     return `${this.path}.${key}`;

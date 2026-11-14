@@ -101,7 +101,7 @@ for (const transfer of await stablevoy.unmatchedTransfers.list()) {
 }
 ```
 
-The payout wallet belongs to your account, not to one store, so each transfer has `sharedWithStores`: 1 means it is certainly this store's, more means it may belong to any of that many of your stores.
+Several of your stores can pay out to the same wallet, so each transfer has `sharedWithStores`: how many active stores offer this network and use that wallet. 1 means it is certainly this store's, more means it may belong to any of that many of your stores.
 
 ## Check the store before going live
 
@@ -180,6 +180,17 @@ export async function POST(request: Request) {
   const event = await verifier.verify(await request.text(), request.headers.get('X-Stablevoy-Signature'));
   // ...
   return new Response(null, { status: 200 });
+}
+```
+
+An endpoint that keeps failing is paused: after 10 failed attempts `store.webhookHealth.status` is `failing` and `pausesAt` says when it will be paused; after 24 hours of failures it is `paused` and new events wait up to 30 days. The merchant resumes it in the dashboard. Show it in your settings page so the merchant sees it before orders go unconfirmed:
+
+```ts
+import { WEBHOOK_HEALTH_STATUS } from 'stablevoy';
+
+const { webhookHealth } = await stablevoy.stores.current();
+if (webhookHealth?.status === WEBHOOK_HEALTH_STATUS.PAUSED) {
+  // Webhooks are paused: tell the merchant to fix the endpoint and resume it in the Stablevoy dashboard.
 }
 ```
 

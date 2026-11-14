@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.0
+
+- `Store.webhookHealth`: the state of the store's webhook endpoint, null when the store has no webhook URL. `status` is `active`, `failing` (at least 10 failed attempts, `pausesAt` says when it will be paused if it keeps failing) or `paused` (failed for 24 hours; new events wait up to 30 days), values in `WEBHOOK_HEALTH_STATUS`; also `failingSince`, `failedAttempts`, `pausedAt` and `pauseReason`. The merchant resumes a paused endpoint in the dashboard. Needs the API with paused endpoints (November 2026); an older answer without the field is refused as an unexpected response.
+- `UnmatchedTransfer.sharedWithStores` is documented as it is counted: the active stores that offer the network and pay out to the same wallet.
+
 ## 1.9.0
 
 - A store can pay out to its own address instead of the account one (set in the dashboard). `Store.payoutAddresses` are now the addresses this store's new invoices use; `Store.payoutSources` says for each family whether it is the store's own (`store`) or the account's (`account`), values in `PAYOUT_SOURCE`; `Store.accountPayoutAddresses` lists the account addresses. `evmPayoutStatus` and `evmNetworksBlocked` follow the EVM address the store uses.

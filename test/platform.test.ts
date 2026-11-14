@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { UnexpectedResponseError } from '../src/errors/UnexpectedResponseError.js';
 import { canAcceptPayments, evmPayoutNeedsReview, EVM_PAYOUT_STATUS, PAYOUT_SOURCE } from '../src/model/Platform.js';
 import { ApiError } from '../src/errors/ApiError.js';
+import { WEBHOOK_HEALTH_STATUS } from '../src/model/WebhookHealth.js';
 import { json } from './support/FakeFetch.js';
 import { example } from './support/openApi.js';
 import { testClient } from './support/client.js';
@@ -61,6 +62,20 @@ describe('store and platform', () => {
       const old = Object.fromEntries(Object.entries(store).filter(([key]) => key !== field));
       await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
     }
+  });
+
+  it('reads the state of the webhook endpoint, null without a webhook URL (paused endpoints)', async () => {
+    const store = example('GET', '/v1/store', 200);
+    const paused = { status: WEBHOOK_HEALTH_STATUS.PAUSED, failingSince: '2026-11-12T10:00:00.000Z', failedAttempts: 31, pausesAt: null, pausedAt: '2026-11-13T10:00:00.000Z', pauseReason: 'Endpoint answered HTTP 500' };
+    const read = await testClient([json(200, { ...store, webhookHealth: paused })]).client.stores.current();
+    expect(read.webhookHealth).toEqual({ status: 'paused', failingSince: new Date('2026-11-12T10:00:00.000Z'), failedAttempts: 31, pausesAt: null, pausedAt: new Date('2026-11-13T10:00:00.000Z'), pauseReason: 'Endpoint answered HTTP 500' });
+    const failing = { status: WEBHOOK_HEALTH_STATUS.FAILING, failingSince: '2026-11-12T10:00:00.000Z', failedAttempts: 12, pausesAt: '2026-11-13T10:00:00.000Z', pausedAt: null, pauseReason: null };
+    expect((await testClient([json(200, { ...store, webhookHealth: failing })]).client.stores.current()).webhookHealth?.pausesAt).toEqual(new Date('2026-11-13T10:00:00.000Z'));
+    expect((await testClient([json(200, { ...store, webhookHealth: null })]).client.stores.current()).webhookHealth).toBeNull();
+    expect(WEBHOOK_HEALTH_STATUS.ACTIVE).toBe('active');
+    const old = Object.fromEntries(Object.entries(store).filter(([key]) => key !== 'webhookHealth'));
+    await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
+    await expect(testClient([json(200, { ...store, webhookHealth: { ...failing, failedAttempts: 'many' } })]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
   });
 
   it('reads the payment window of the store, null for the platform default', async () => {

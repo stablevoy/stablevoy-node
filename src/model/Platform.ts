@@ -1,4 +1,5 @@
 import type { Fields } from './Fields.js';
+import { parseWebhookHealth, type WebhookHealth } from './WebhookHealth.js';
 
 /** Values of Store.evmPayoutStatus. */
 export const EVM_PAYOUT_STATUS = {
@@ -53,6 +54,8 @@ export interface Store {
   readonly accountPayoutAddresses: PayoutAddresses;
   /** When the store was archived; null while it is not. The keys of an archived store are revoked. */
   readonly archivedAt: Date | null;
+  /** State of the webhook endpoint (failing, paused); null when the store has no webhook URL. Resumed only in the dashboard. */
+  readonly webhookHealth: WebhookHealth | null;
 }
 
 export interface PayoutSources {
@@ -86,7 +89,12 @@ export function parseStore(f: Fields): Store {
     payoutSources: parsePayoutSources(f.object('payoutSources')),
     accountPayoutAddresses: parsePayoutAddresses(f.object('accountPayoutAddresses')),
     archivedAt: f.nullableDate('archivedAt'),
+    webhookHealth: parseOptionalWebhookHealth(f.nullableObject('webhookHealth')),
   };
+}
+
+function parseOptionalWebhookHealth(f: Fields | null): WebhookHealth | null {
+  return f === null ? null : parseWebhookHealth(f);
 }
 
 function parsePayoutSources(f: Fields): PayoutSources {
