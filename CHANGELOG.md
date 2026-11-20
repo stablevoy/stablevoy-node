@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.0
+
+- Invoices priced in another currency: `invoices.create({ amount, currency })` with the amount in the smallest unit of the currency (4999 is 49.99 EUR), instead of `amountUsdCents`. Give one form or the other, never both. The API converts the price once, at creation, rounded up to the cent, and keeps the rate.
+- `Invoice.pricing`: the currency, amount, exponent, `usdPerUnit`, `rateSource` (`ecb` or `merchant`) and `rateAt` of an invoice priced in another currency; null for a USD invoice; absent only on webhook events recorded before 19 November 2026.
+- `currencies.list()`: every supported currency with its exponent and the market rate in use. `currencies.forStore(storeId)`: the same with the store's own fixed rates and the rate an invoice of the store would use now. A store's own rate is set in the dashboard only.
+- New `ApiError.EXCHANGE_RATE_UNAVAILABLE` and `ApiError.CURRENCY_NOT_SUPPORTED`.
+- `Stablevoy` takes `Currencies` as a fifth constructor argument; `Stablevoy.create()` and `Stablevoy.fromTransport()` are unchanged.
+
 ## 1.10.0
 
 - `Store.webhookHealth`: the state of the store's webhook endpoint, null when the store has no webhook URL. `status` is `active`, `failing` (at least 10 failed attempts, `pausesAt` says when it will be paused if it keeps failing) or `paused` (failed for 24 hours; new events wait up to 30 days), values in `WEBHOOK_HEALTH_STATUS`; also `failingSince`, `failedAttempts`, `pausedAt` and `pauseReason`. The merchant resumes a paused endpoint in the dashboard. Needs the API with paused endpoints (November 2026); an older answer without the field is refused as an unexpected response.

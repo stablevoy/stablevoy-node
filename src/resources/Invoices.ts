@@ -36,9 +36,7 @@ export class Invoices {
    * first invoice (replayed: true) instead of a second one, and only then does this library retry on its own.
    */
   async create(input: CreateInvoiceInput, options: { readonly idempotencyKey?: string } = {}): Promise<CreatedInvoice> {
-    if (!Number.isSafeInteger(input.amountUsdCents) || input.amountUsdCents < 1) {
-      throw new RangeError('amountUsdCents must be a positive whole number of US cents, for example 1999 for $19.99');
-    }
+    const body: Record<string, string | number> = Invoices.amountOf(input);
     // What the API accepts; anything else would be refused there, or make fetch throw on the header.
     if (options.idempotencyKey !== undefined && !IDEMPOTENCY_KEY.test(options.idempotencyKey)) {
       throw new RangeError('The idempotency key must be 1 to 255 printable ASCII characters without spaces, such as your order id');
@@ -47,7 +45,6 @@ export class Invoices {
     if (input.expiresInMinutes !== undefined && !Number.isSafeInteger(input.expiresInMinutes)) {
       throw new RangeError('expiresInMinutes must be a whole number of minutes, for example 60 or 1440');
     }
-    const body: Record<string, string | number> = { amountUsdCents: input.amountUsdCents };
     if (input.externalReference !== undefined) body['externalReference'] = input.externalReference;
     if (input.returnUrl !== undefined) body['returnUrl'] = input.returnUrl;
     if (input.expiresInMinutes !== undefined) body['expiresInMinutes'] = input.expiresInMinutes;
@@ -68,6 +65,20 @@ export class Invoices {
   async cancel(invoiceId: string): Promise<Invoice> {
     Invoices.checkId(invoiceId);
     return parseInvoice(Fields.of(await this.transport.post(`/v1/invoices/${invoiceId}/cancel`, {}), 'invoice'));
+  }
+
+  /** The amount part of the body: amountUsdCents, or amount with currency, never both. */
+  private static amountOf(input: CreateInvoiceInput): Record<string, string | number> {
+    if (input.amountUsdCents !== undefined) {
+      if (input.amount !== undefined || input.currency !== undefined) throw new RangeError('Give amountUsdCents, or amount with currency, not both');
+      if (!Number.isSafeInteger(input.amountUsdCents) || input.amountUsdCents < 1) throw new RangeError('amountUsdCents must be a positive whole number of US cents, for example 1999 for $19.99');
+      return { amountUsdCents: input.amountUsdCents };
+    }
+    if (input.amount === undefined || input.currency === undefined) throw new RangeError('Give amountUsdCents, or amount with currency');
+    if (!Number.isSafeInteger(input.amount) || input.amount < 1) throw new RangeError('amount must be a positive whole number of the smallest unit of the currency, for example 4999 for 49.99 EUR');
+    // The list of currencies is the API's (currencies.list()); here only the shape of an ISO 4217 code.
+    if (!/^[A-Z]{3}$/.test(input.currency)) throw new RangeError('currency must be an ISO 4217 code in capitals, such as EUR');
+    return { amount: input.amount, currency: input.currency };
   }
 
   // Ids are UUIDs; anything else (such as "..") could make the request reach another path with your key.

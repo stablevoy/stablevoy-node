@@ -36,6 +36,19 @@ const created = await stablevoy.invoices.create(
 
 The buyer has the store's payment window to pay, or the platform default when the store sets none (`stablevoy.platform.limits()` gives it and the bounds). Pass `expiresInMinutes` (15 to 10080, that is 7 days) to set it for one invoice, for example a day or more for an invoice you send by email.
 
+## Prices in your own currency
+
+A shop that prices in EUR, GBP, JPY or another supported currency sends the price as it is, in the smallest unit of the currency, instead of `amountUsdCents`:
+
+```ts
+const created = await stablevoy.invoices.create({ amount: 4999, currency: 'EUR', externalReference: 'order-1043' }); // 49.99 EUR
+
+created.invoice.amountUsdCents; // the price converted once, at creation, rounded up to the cent
+created.invoice.pricing; // { currency: 'EUR', amount: 4999, exponent: 2, usdPerUnit: '1.0992', rateSource: 'ecb', rateAt }
+```
+
+The buyer pays USDC or USDT for `amountUsdCents`; the rate is kept with the invoice and sent in every webhook. `pricing` is null on an invoice priced in USD. `stablevoy.currencies.list()` gives the supported currencies with their exponent and the market rate (ECB reference rates, checked against Coinbase); `stablevoy.currencies.forStore(storeId)` adds the store's own fixed rates, set in the dashboard, and `effective`, the rate an invoice would use now. With no usable rate the API refuses the invoice with `ApiError.EXCHANGE_RATE_UNAVAILABLE`.
+
 ## Cancel an unpaid invoice
 
 When the order is cancelled before the buyer pays, cancel its invoice. The payment page then tells the buyer not to pay, and the webhook `invoice.cancelled` is sent. Cancelling it again returns it unchanged.

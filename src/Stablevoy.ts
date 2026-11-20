@@ -5,6 +5,7 @@ import { Invoices } from './resources/Invoices.js';
 import { Platform } from './resources/Platform.js';
 import { Stores } from './resources/Stores.js';
 import { UnmatchedTransfers } from './resources/UnmatchedTransfers.js';
+import { Currencies } from './resources/Currencies.js';
 
 export interface StablevoyOptions extends ConnectionOptions {
   /** The store's API key (sk_live_... or sk_test_...). */
@@ -18,6 +19,7 @@ export class Stablevoy {
     readonly stores: Stores,
     readonly platform: Platform,
     readonly unmatchedTransfers: UnmatchedTransfers,
+    readonly currencies: Currencies,
   ) {}
 
   static create(options: StablevoyOptions): Stablevoy {
@@ -25,6 +27,6 @@ export class Stablevoy {
   }
 
   static fromTransport(transport: Transport): Stablevoy {
-    return new Stablevoy(new Invoices(transport), new Stores(transport), new Platform(transport), new UnmatchedTransfers(transport));
+    return new Stablevoy(new Invoices(transport), new Stores(transport), new Platform(transport), new UnmatchedTransfers(transport), new Currencies(transport));
   }
 }

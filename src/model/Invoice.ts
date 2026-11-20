@@ -1,5 +1,6 @@
 import type { Fields } from './Fields.js';
 import { parseInvoiceSource, type InvoiceSource } from './InvoiceSource.js';
+import { parseInvoicePricing, type InvoicePricing } from './InvoicePricing.js';
 
 /** Where the buyer pays on one network: a one-time deposit address, or on Tron the merchant's own wallet. */
 export interface DepositAddress {
@@ -29,7 +30,13 @@ export interface Invoice {
   readonly storeId: string;
   /** See InvoiceStatus; isPaidStatus() says whether the order can be fulfilled. */
   readonly status: string;
+  /** For an invoice priced in another currency: that price converted at creation, rounded up to the cent. */
   readonly amountUsdCents: number;
+  /**
+   * The price and rate of an invoice created in another currency than USD; null when it was priced in USD. Absent only on
+   * webhook events recorded before 19 November 2026, which did not carry it.
+   */
+  readonly pricing?: InvoicePricing | null;
   readonly feeBps: number;
   readonly invoiceSalt: string;
   readonly externalReference: string | null;
@@ -50,6 +57,7 @@ export function parseInvoice(f: Fields): Invoice {
     storeId: f.string('storeId'),
     status: f.string('status'),
     amountUsdCents: f.int('amountUsdCents'),
+    ...(Object.hasOwn(f.raw(), 'pricing') ? { pricing: f.raw()['pricing'] === null ? null : parseInvoicePricing(f.object('pricing')) } : {}),
     feeBps: f.int('feeBps'),
     invoiceSalt: f.string('invoiceSalt'),
     externalReference: f.nullableString('externalReference'),
@@ -103,9 +111,17 @@ export function parseInvoicePage(f: Fields): InvoicePage {
   return { items: f.objects('items', parseInvoice), nextCursor: f.nullableString('nextCursor') };
 }
 
-/** What to create an invoice for: the amount in US cents, your order id and where the buyer returns after paying. */
+/**
+ * What to create an invoice for: the amount, your order id and where the buyer returns after paying. Give the amount either
+ * in US cents (amountUsdCents), or in your own currency (amount in its smallest unit plus currency, see currencies.list()):
+ * the API converts it once, at creation, and keeps the rate in invoice.pricing.
+ */
 export interface CreateInvoiceInput {
-  readonly amountUsdCents: number;
+  readonly amountUsdCents?: number;
+  /** In the smallest unit of currency: 4999 is 49.99 EUR, 1500 is 1500 JPY. Goes with currency. */
+  readonly amount?: number;
+  /** ISO 4217 code such as 'EUR'. Goes with amount. */
+  readonly currency?: string;
   readonly externalReference?: string;
   readonly returnUrl?: string;
   /**

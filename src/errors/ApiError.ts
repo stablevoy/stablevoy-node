@@ -33,6 +33,10 @@ export class ApiError extends StablevoyError {
   static readonly INVALID_INVOICE_LIFETIME = 'invalid_invoice_lifetime';
   /** The store already has as many invoices awaiting payment as platform.limits() allows: cancel unused ones or let them expire. */
   static readonly OPEN_INVOICE_LIMIT_REACHED = 'open_invoice_limit_reached';
+  /** No usable rate for the invoice currency right now: the market rate is missing or too old and the store has no own rate. Retry later or price in USD. */
+  static readonly EXCHANGE_RATE_UNAVAILABLE = 'exchange_rate_unavailable';
+  /** The currency is not one of currencies.list(). */
+  static readonly CURRENCY_NOT_SUPPORTED = 'currency_not_supported';
   /** A list or summary filter the API refuses, such as a summary range longer than 92 days or one that ends before it starts. */
   static readonly INVALID_INVOICE_FILTER = 'invalid_invoice_filter';
 
