@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.12.0
+
+- `stores.checkoutFunnel({ period })` or `stores.checkoutFunnel({ createdFrom, createdTo })`: where buyers stop on the payment page, for the store's invoices created in a range of UTC days. How many opened the page (and where: `openedOn.page`, `openedOn.widget`), changed the network or token, copied the payment details, started a wallet, cancelled it or had it fail, sent the transaction, and how many saw a payment (`detected`) and were paid. The same range rules as `invoices.summary()`.
+- `invoices.checkoutTrail(invoiceId)`: the steps of one invoice, oldest first, each with the time it was first reached, from its creation to the outcome.
+- `CheckoutStep` and `CheckoutSurface` hold the known step and surface names; responses keep them as strings, so a new step does not break this version.
+- Needs the API with the payment page funnel (November 2026).
+
 ## 1.11.0
 
 - Invoices priced in another currency: `invoices.create({ amount, currency })` with the amount in the smallest unit of the currency (4999 is 49.99 EUR), instead of `amountUsdCents`. Give one form or the other, never both. The API converts the price once, at creation, rounded up to the cent, and keeps the rate.

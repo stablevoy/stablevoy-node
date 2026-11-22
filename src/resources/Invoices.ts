@@ -1,7 +1,9 @@
 import type { Query, Transport } from '../http/Transport.js';
 import { Fields } from '../model/Fields.js';
 import { parseCreatedInvoice, parseInvoice, parseInvoicePage, type CreatedInvoice, type CreateInvoiceInput, type Invoice, type InvoicePage } from '../model/Invoice.js';
-import { parseInvoiceSummary, SummaryPeriod, type InvoiceSummary, type InvoiceSummaryInput } from '../model/InvoiceSummary.js';
+import { parseInvoiceSummary, type InvoiceSummary, type InvoiceSummaryInput } from '../model/InvoiceSummary.js';
+import { parseCheckoutTrail, type CheckoutTrail } from '../model/CheckoutTrail.js';
+import { summaryRangeQuery } from './SummaryRange.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -111,23 +113,17 @@ export class Invoices {
    * a year in four parts; a longer range is refused with ApiError.INVALID_INVOICE_FILTER. The API allows 30 calls a minute per store.
    */
   async summary(input: InvoiceSummaryInput): Promise<InvoiceSummary> {
-    // Read loosely: a JavaScript caller can pass any mix, and it is refused here rather than by the API.
-    const given = input as { readonly period?: unknown; readonly createdFrom?: unknown; readonly createdTo?: unknown };
-    const query: Record<string, string> = {};
-    const hasDays = given.createdFrom !== undefined || given.createdTo !== undefined;
-    if ((given.period !== undefined) === hasDays) throw new RangeError('Pass either period or both createdFrom and createdTo');
-    if (hasDays) {
-      for (const name of ['createdFrom', 'createdTo'] as const) {
-        const day = given[name];
-        if (typeof day !== 'string' || !DAY.test(day)) throw new RangeError(`${name} must be a date as YYYY-MM-DD`);
-        query[name] = day;
-      }
-    } else {
-      const period = given.period;
-      if (typeof period !== 'string' || !(Object.values(SummaryPeriod) as string[]).includes(period)) throw new RangeError(`period must be one of ${Object.values(SummaryPeriod).join(', ')}`);
-      query['period'] = period;
-    }
-    return parseInvoiceSummary(Fields.of(await this.transport.get('/v1/invoices/summary', query satisfies Query), 'summary'));
+    return parseInvoiceSummary(Fields.of(await this.transport.get('/v1/invoices/summary', summaryRangeQuery(input) satisfies Query), 'summary'));
+  }
+
+  /**
+   * The steps one invoice went through on the payment page, oldest first: created, what the page reported (each step once,
+   * with the time it was first reached), the first payment seen on chain and the outcome. Buyers who pay from another
+   * device or by hand may skip page steps.
+   */
+  async checkoutTrail(invoiceId: string): Promise<CheckoutTrail> {
+    Invoices.checkId(invoiceId);
+    return parseCheckoutTrail(Fields.of(await this.transport.get(`/v1/invoices/${invoiceId}/checkout-trail`), 'checkoutTrail'));
   }
 
   /** Every invoice, newest first, fetching the pages as you iterate: `for await (const invoice of invoices.all())`. */
