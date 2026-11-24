@@ -138,7 +138,7 @@ Several of your stores can pay out to the same wallet, so each transfer has `sha
 Invoices need a payout wallet for at least one network the store accepts; without one every invoice is refused with `payout_address_not_set`. An EVM payout wallet that is a smart contract wallet or an EIP-7702 delegation must be confirmed in the dashboard, and confirmed again when it changes; until then new invoices leave out the EVM networks, and a store with nothing else is refused with `payout_address_unacknowledged`. Read the store of the key to find out in advance, and tell the merchant about networks buyers will not be offered:
 
 ```ts
-import { canAcceptPayments, evmPayoutNeedsReview } from 'stablevoy';
+import { canAcceptPayments, evmPayoutNeedsReview, invoiceRangeContains } from 'stablevoy';
 
 const store = await stablevoy.stores.current();
 if (!canAcceptPayments(store)) {
@@ -153,7 +153,12 @@ console.log(store.accountPayoutAddresses); // the account wallets, also when the
 if (evmPayoutNeedsReview(store)) {
   // The EVM payout wallet is not confirmed: store.evmNetworksBlocked are not offered until the merchant reviews it in the dashboard.
 }
+if (!invoiceRangeContains(store.invoiceRange, orderTotalUsdCents)) {
+  // Outside the amounts this store accepts now: hide the payment method for this order.
+}
 ```
+
+`store.invoiceRange` is the range that applies to the store now: the account bounds (the platform ones, or a higher or lower cap set for the account on request) narrowed by the store minimum and maximum. Use it instead of computing a range from `platform.limits()`.
 
 ## Connect a shop in one click
 

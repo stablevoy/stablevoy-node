@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13.0
+
+- `Store.invoiceRange` (`InvoiceRange`) and `invoiceRangeContains(range, amountUsdCents)`: the amounts an invoice of the store may have now, in US cents. It is the account bounds (the platform ones, or a higher or lower cap set for the account on request) narrowed by the store minimum and maximum; use it instead of computing a range from `platform.limits()`, which shows only the platform default.
+- Needs the API with per-account invoice caps (November 2026); an older answer without the field is refused as an unexpected response.
+
 ## 1.12.0
 
 - `stores.checkoutFunnel({ period })` or `stores.checkoutFunnel({ createdFrom, createdTo })`: where buyers stop on the payment page, for the store's invoices created in a range of UTC days. How many opened the page (and where: `openedOn.page`, `openedOn.widget`), changed the network or token, copied the payment details, started a wallet, cancelled it or had it fail, sent the transaction, and how many saw a payment (`detected`) and were paid. The same range rules as `invoices.summary()`.

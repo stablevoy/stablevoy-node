@@ -3,6 +3,7 @@ import { UnexpectedResponseError } from '../src/errors/UnexpectedResponseError.j
 import { canAcceptPayments, evmPayoutNeedsReview, EVM_PAYOUT_STATUS, PAYOUT_SOURCE } from '../src/model/Platform.js';
 import { ApiError } from '../src/errors/ApiError.js';
 import { WEBHOOK_HEALTH_STATUS } from '../src/model/WebhookHealth.js';
+import { invoiceRangeContains } from '../src/model/InvoiceRange.js';
 import { json } from './support/FakeFetch.js';
 import { example } from './support/openApi.js';
 import { testClient } from './support/client.js';
@@ -48,6 +49,16 @@ describe('store and platform', () => {
     expect(read.payoutAddresses).toEqual({ evm: '0x' + 'ab'.repeat(20), tron: null });
     const old = { ...store };
     delete old['payoutAddresses'];
+    await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
+  });
+
+  it('reads the invoice range of the store and refuses an answer without it', async () => {
+    const store = example('GET', '/v1/store', 200);
+    expect((await testClient([json(200, store)]).client.stores.current()).invoiceRange).toEqual({ minUsdCents: 500, maxUsdCents: 100_000 });
+    const raised = (await testClient([json(200, { ...store, invoiceRange: { minUsdCents: 500, maxUsdCents: 20_000_000 } })]).client.stores.current()).invoiceRange;
+    expect([499, 500, 15_000_000, 20_000_000, 20_000_001].map((cents) => invoiceRangeContains(raised, cents))).toEqual([false, true, true, true, false]);
+    const old = { ...store };
+    delete old['invoiceRange'];
     await expect(testClient([json(200, old)]).client.stores.current()).rejects.toBeInstanceOf(UnexpectedResponseError);
   });
 

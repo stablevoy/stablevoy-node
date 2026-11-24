@@ -1,5 +1,6 @@
 import type { Fields } from './Fields.js';
 import { parseWebhookHealth, type WebhookHealth } from './WebhookHealth.js';
+import { parseInvoiceRange, type InvoiceRange } from './InvoiceRange.js';
 
 /** Values of Store.evmPayoutStatus. */
 export const EVM_PAYOUT_STATUS = {
@@ -56,6 +57,8 @@ export interface Store {
   readonly archivedAt: Date | null;
   /** State of the webhook endpoint (failing, paused); null when the store has no webhook URL. Resumed only in the dashboard. */
   readonly webhookHealth: WebhookHealth | null;
+  /** The amounts an invoice of this store may have now; offer the payment method only inside it (invoiceRangeContains). */
+  readonly invoiceRange: InvoiceRange;
 }
 
 export interface PayoutSources {
@@ -90,6 +93,7 @@ export function parseStore(f: Fields): Store {
     accountPayoutAddresses: parsePayoutAddresses(f.object('accountPayoutAddresses')),
     archivedAt: f.nullableDate('archivedAt'),
     webhookHealth: parseOptionalWebhookHealth(f.nullableObject('webhookHealth')),
+    invoiceRange: parseInvoiceRange(f.object('invoiceRange')),
   };
 }
 
