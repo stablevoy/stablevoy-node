@@ -3,11 +3,13 @@ import { parseInvoice, type Invoice } from '../model/Invoice.js';
 
 /**
  * A verified webhook. Types: invoice.paid, invoice.overpaid, invoice.underpaid, invoice.expired, invoice.paid_late,
- * invoice.on_hold, invoice.cancelled, invoice.payment_flagged, store.payout_attention, api_key.leaked, webhook_secret.leaked
+ * invoice.on_hold, invoice.cancelled, invoice.payment_flagged, store.payout_attention, store.payout_changed, api_key.leaked, webhook_secret.leaked
  * and webhook.test. invoice.payment_flagged: a payment of a settled invoice was flagged by screening; the invoice keeps its
  * status and `data.payment` holds the payment. store.payout_attention: the EVM payout wallet this store uses (its own or the
  * account's) became unconfirmed or is fine again; `invoice` is null and `data.payout` holds status, source ('store' or
- * 'account'), blockedNetworks and dashboardUrl. Read stores.current() again for the current state. api_key.leaked: GitHub
+ * 'account'), blockedNetworks and dashboardUrl. Read stores.current() again for the current state. store.payout_changed: the
+ * payout wallet this store uses changed; `data.payout` holds family, address and source. A shop that anchors its payment
+ * links (CheckoutLink) shows the merchant the new wallet to confirm and never takes it from this event. api_key.leaked: GitHub
  * found an API key of the store in public code and it was revoked; webhook_secret.leaked: the same for the webhook signing
  * secret, which the merchant rotates in the dashboard; `invoice` is null for both.
  * Deliveries can repeat: use `id` to process each event once.

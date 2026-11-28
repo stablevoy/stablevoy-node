@@ -36,6 +36,28 @@ const created = await stablevoy.invoices.create(
 
 The buyer has the store's payment window to pay, or the platform default when the store sets none (`stablevoy.platform.limits()` gives it and the bounds). Pass `expiresInMinutes` (15 to 10080, that is 7 days) to set it for one invoice, for example a day or more for an invoice you send by email.
 
+## Confirm the payout wallet in the payment link
+
+Put the payout wallets your shop confirmed into the payment link, and the Stablevoy payment page refuses any other wallet, even one a compromised server would name. Save the wallets when the merchant confirms them in your shop; never take them from an API answer or a webhook.
+
+```ts
+import { CheckoutLink, PayoutAnchor, PayoutMismatchError } from 'stablevoy';
+
+const anchor = new PayoutAnchor({ evm: confirmedEvmWallet, tron: confirmedTronWallet });
+try {
+  const link = new CheckoutLink().for(created, anchor);
+  if (link.mismatchedNetworks.length > 0) {
+    // The payout wallet changed for these networks: ask the merchant to confirm the new one.
+  }
+  // Send the buyer to link.url
+} catch (error) {
+  if (!(error instanceof PayoutMismatchError)) throw error;
+  // No network pays to a confirmed wallet: do not send the buyer, tell the merchant.
+}
+```
+
+When the merchant changes a payout wallet, every store using it gets a `store.payout_changed` webhook: show the merchant the new wallet and save it only after they confirm it in your shop.
+
 ## Prices in your own currency
 
 A shop that prices in EUR, GBP, JPY or another supported currency sends the price as it is, in the smallest unit of the currency, instead of `amountUsdCents`:

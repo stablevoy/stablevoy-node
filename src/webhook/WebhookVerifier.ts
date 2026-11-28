@@ -30,7 +30,7 @@ export class WebhookVerifier {
   private readonly toleranceSeconds: number;
   private readonly clock: Clock;
 
-  /** `secret` is the webhook signing secret of the store (whsec_...). */
+  /** `secret` is the webhook signing secret of the store (svwhsec_...; older whsec_... secrets keep working). */
   constructor(secret: string, options: WebhookVerifierOptions = {}) {
     if (secret === '') throw new RangeError('The webhook signing secret is empty. It is shown once when you set the webhook URL in the dashboard.');
     this.toleranceSeconds = options.toleranceSeconds ?? 300;
